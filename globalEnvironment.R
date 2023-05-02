@@ -70,6 +70,7 @@ generate.new.modelParameter<-function(scenario){
   
   ########################################################
   #1- load HIV data  
+  print(paste0("reading data/hiv_simset_scenario",scenario,".RData ..."))
   load(paste0("data/hiv_simset_scenario",scenario,".RData")) # extended name for different datasets from KHM
   
   MP$khm.full=khm.full # leaving full simset in here for plotting purposes
