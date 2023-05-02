@@ -95,7 +95,13 @@ if (1==1) {
   
   x=as.numeric(args[1])
   rep=floor((x-1)/(S))+1
-  scenarioId= (x-1)%%5
+  scenarioId= (x-1)%%5+1
+  
+  # for (x in c(1:50)){
+  #   rep=floor((x-1)/(S))+1
+  #   scenarioId= (x-1)%%5+1
+  #   print(paste("x=",x,"rep=",rep,"scenario=",scenarioId))
+  # }
   
   # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
   set.seed(rep)
