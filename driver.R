@@ -55,7 +55,7 @@ lapply(c(1:10),function(rep){
     # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
     pop<-initialize.simulation(id = rep,
                                n = POP.SIZE,
-                               scenario=0) #'@MS: add the hiv.simset for 5 scenarios
+                               scenario=2) #'@MS: add the hiv.simset for 5 scenarios
                                # scenario=scenarioId)
     #run sims
     while(pop$params$CYNOW<= 2030)
