@@ -135,6 +135,7 @@ simplot = function(..., # can pass any combination of single simulations or full
                         "mi.inc" = "n.mi.inc",
                         "stroke.inc" = "n.stroke.inc",
                         "hiv.mortality"="n.deaths.hiv",
+                        "cvd.mortality"="n.deaths.cvd",
                         "non.hiv.mortality"="n.deaths.non.hiv")
   
   if(scale.population & view.as.rate)
@@ -161,7 +162,9 @@ simplot = function(..., # can pass any combination of single simulations or full
         if(is.null(ncd.data.type.x))
           stop("Haven't set up to pull this data type from ncd model")
         
-        if(data.type %in% c("population","hiv.incidence","mi.inc","stroke.inc","hyp.inc","diab.inc","diab.hyp.inc","hiv.mortality","non.hiv.mortality")){
+        if(data.type %in% c("population","hiv.incidence","mi.inc","stroke.inc",
+                            "hyp.inc","diab.inc","diab.hyp.inc",
+                            "hiv.mortality","non.hiv.mortality","cvd.mortality")){
           value = filter.5D.stats.by.field(sim[[j]]$stats[[ncd.data.type.x]], 
                                            years = years,
                                            ages = ages, 
