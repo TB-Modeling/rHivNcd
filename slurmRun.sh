@@ -7,8 +7,8 @@
 
 #SBATCH --partition=defq
 #SBATCH --job-name=hivncd-slurm
-#SBATCH --time=00:05:0
-#SBATCH --cpus-per-task=1
+#SBATCH --time=05:00:0
+#SBATCH --cpus-per-task=2
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=4GB
 #SBATCH --array=1-50

@@ -35,7 +35,7 @@ print("Sourcing dependencies")
   source("population.R")
   source("rHelperFunctions.R")
   source("rCoreFunctions.R")
-  source("plots.R")
+  # source("plots.R")
 }
 
 scenarios=list(
