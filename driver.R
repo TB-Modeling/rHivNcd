@@ -11,6 +11,7 @@
 # if(length(new.packages)) install.packages(new.packages)
 
 library(R6)
+library(data.table)
 # library(Rcpp)
 library(ggplot2)
 # library(data.table)
@@ -46,39 +47,38 @@ scenarios=list(
 )
 #######################################################
 # MULTI REPS
-print("running models....")
-lapply(c(1:10),function(rep){
-  lapply(c(1:5),function(scenarioId){
-    start_time <- Sys.time()
-    set.seed(rep)
-    
-    # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
-    pop<-initialize.simulation(id = rep,
-                               n = POP.SIZE,
-                               scenario=2) #'@MS: add the hiv.simset for 5 scenarios
-                               # scenario=scenarioId)
-    #run sims
-    while(pop$params$CYNOW<= 2030)
-      run.one.year.int(pop,
-                       scenario =scenarios[[scenarioId]]$id,
-                       int.start.year = 2023,
-                       int.end.year = 2030,
-                       pCoverage = scenarios[[scenarioId]]$pCoverage,
-                       pNcdTrtInitiation = scenarios[[scenarioId]]$pNcdTrtInitiation,
-                       pDropOut=scenarios[[scenarioId]]$pDropOut
-      )
-    
-    #saving population
-    res=list(stats=pop$stats,
-             params=pop$params)
-    saveRDS(res,file = paste0("outputs/popList-s",scenarioId,"-rep",rep),compress = T)
-    # saving time
-    end_time <- Sys.time()
-    session_time=end_time - start_time
-    txt=paste("Model ",rep," >> session time ",session_time)
-    write.table(x = txt,file = "outputs/out-sessionTime.txt",col.names = F,row.names = F,append = T)
-  })
-})
+# print("running models....")
+# lapply(c(1:10),function(rep){
+#   lapply(c(1:5),function(id){
+#     start_time <- Sys.time()
+#     set.seed(rep)
+#     scenario=scenarios[[id]]$id
+#     # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
+#     pop<-initialize.simulation(id = rep,
+#                                n = POP.SIZE,
+#                                scenario=scenario)
+#     #run sims
+#     while(pop$params$CYNOW<= 2030)
+#       run.one.year.int(pop,
+#                        scenario =scenarios[[id]]$id,
+#                        int.start.year = 2023,
+#                        int.end.year = 2030,
+#                        pCoverage = scenarios[[id]]$pCoverage,
+#                        pNcdTrtInitiation = scenarios[[id]]$pNcdTrtInitiation,
+#                        pDropOut=scenarios[[id]]$pDropOut
+#       )
+#     
+#     #saving population
+#     res=list(stats=pop$stats,
+#              params=pop$params)
+#     saveRDS(res,file = paste0("outputs/popList-s",scenario,"-rep",rep),compress = T)
+#     # saving time
+#     end_time <- Sys.time()
+#     session_time=end_time - start_time
+#     txt=paste("Model ",rep," >> session time ",session_time)
+#     write.table(x = txt,file = "outputs/out-sessionTime.txt",col.names = F,row.names = F,append = T)
+#   })
+# })
 
 # # #######################################################
 # {
@@ -113,33 +113,45 @@ lapply(c(1:10),function(rep){
 #            params=pop$params)
 # }
 # #######################################################
-# # SINGLE RUN ON ROCKFISH
-# # {
-#   # Create the population in year 2014; save the stats and move the clock to 2015
-#   args = commandArgs(trailingOnly=TRUE)
-#   rep=as.numeric(args[1])
-#   # we need to set the seed first, then sample KHM models
-#   set.seed(rep)
-#   print(paste("replication ",rep,"starting..."))
-# 
-#   ####
-#   start_time <- Sys.time()
-#   pop<-initialize.simulation(id = rep, n = POP.SIZE)
-# 
-#   while(pop$params$CYNOW<= END.YEAR)
-#     pop<-run.one.year(pop)
-# 
-#   #saving population
-#   res=list(stats=pop$stats,
-#                params=pop$params)
-#   saveRDS(res,file = paste0("outputs/popList-c",rep),compress = T)
-# 
-#   # saving time
-#   end_time <- Sys.time()
-#   session_time=hms_span(start_time,end_time)
-#   write.table(session_time,file = paste0("outputs/out-sessionTime",rep),col.names = F,row.names = F)
-# # }
-
+# SINGLE RUN ON ROCKFISH
+{
+  args = commandArgs(trailingOnly=TRUE)
+  R=10 #reps
+  S=5 #scenarios
+  
+  x=as.numeric(args[1])
+  rep=floor((x-1)/(S))+1
+  scenarioId= (x-1)%%5
+  
+  # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
+  set.seed(rep)
+  scenario=scenarios[[scenarioId]]$id
+  print(paste("replication ",rep," scenario", scenario, "starting..."))
+  start_time <- Sys.time()
+  pop<-initialize.simulation(id = rep,
+                             n = POP.SIZE,
+                             scenario=scenario)
+  #run sims
+  while(pop$params$CYNOW<= 2030)
+    run.one.year.int(pop,
+                     scenario =scenario,
+                     int.start.year = 2023,
+                     int.end.year = 2030,
+                     pCoverage = scenarios[[scenarioId]]$pCoverage,
+                     pNcdTrtInitiation = scenarios[[scenarioId]]$pNcdTrtInitiation,
+                     pDropOut=scenarios[[scenarioId]]$pDropOut
+    )
+  
+  #saving population
+  res=list(stats=pop$stats,
+           params=pop$params)
+  saveRDS(res,file = paste0("outputs/popList-s",scenario,"-rep",rep),compress = T)
+  # saving time
+  end_time <- Sys.time()
+  session_time=end_time - start_time
+  txt=paste("Model ",rep," >> session time ",session_time)
+  write.table(x = txt,file = "outputs/out-sessionTime.txt",col.names = F,row.names = F,append = T)
+}
 
 # # # Reading populations back into a simset object
 #' {

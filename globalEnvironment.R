@@ -16,7 +16,7 @@ END.YEAR=2030 #simulation ends
 AGE.INTERVAL=5
 MIN.AGE=0
 MAX.AGE=85*12
-POP.SIZE=100
+POP.SIZE=10
 #
 FEMALE=1
 MALE=2
@@ -70,14 +70,15 @@ generate.new.modelParameter<-function(scenario){
   
   ########################################################
   #1- load HIV data  
-  khm.full=load(paste0("data/hiv_simset_scenario",scenario,".RData")) # extended name for different datasets from KHM
+  load(paste0("data/hiv_simset_scenario",scenario,".RData")) # extended name for different datasets from KHM
+  
   MP$khm.full=khm.full # leaving full simset in here for plotting purposes
   class(MP$khm.full) = "khm_simulation_output"
   #sample one random khm model:
-  x=sample(1:length(khm.full),1)
+  x=sample(1:length(MP$khm.full),1)
   print(paste("KHM model ",x," was sampled"))
   MP$khm.id=x #khm id that was sampled for this run
-  khm = khm.full[[x]]# randomly sample one hiv sim from the length of n.hiv.sims
+  khm = MP$khm.full[[x]]# randomly sample one hiv sim from the length of n.hiv.sims
   khm.hivPrev2015 = khm$population["2015",,,]
   MP$khm=khm
   MP$khm.hivPrev2015=khm.hivPrev2015
@@ -92,7 +93,7 @@ generate.new.modelParameter<-function(scenario){
   
   ########################################################
   #2- load STEP dataset to generate the initial population by age, sex and ncd state
-  step.dataset = read.csv("data/stepSimPop2015.csv")
+  step.dataset = fread("data/stepSimPop2015",header=T)
   step.dataset$agegroup=ceiling((step.dataset$age+1)/AGE.INTERVAL)
   MP$step.dataset=step.dataset
   
