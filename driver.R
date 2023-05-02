@@ -90,7 +90,7 @@ if (1==2){
 # # SINGLE RUN ON ROCKFISH
 if (1==1) {
   print("running models parallel ....")
-  R=10 #reps
+  R=30 #reps
   S=5 #scenarios
   
   args = commandArgs(trailingOnly=TRUE)
@@ -98,7 +98,7 @@ if (1==1) {
   rep=floor((x-1)/(S))+1
   scenarioId= (x-1)%%5+1
   
-  # for (x in c(1:50)){
+  # for (x in c(1:150)){
   #   rep=floor((x-1)/(S))+1
   #   scenarioId= (x-1)%%5+1
   #   print(paste("x=",x,"rep=",rep,"scenario=",scenarioId))
