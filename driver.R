@@ -48,9 +48,11 @@ scenarios=list(
 #######################################################
 # MULTI REPS
 if (1==2){
+  R=5 #reps
+  S=5 #scenarios
   print("running models sequentially ....")
-  lapply(c(1:1),function(rep){
-    lapply(c(1:5),function(id){
+  lapply(c(1:R),function(rep){
+    lapply(c(1:S),function(id){
       start_time <- Sys.time()
       set.seed(rep)
       scenario=scenarios[[id]]$id
@@ -88,11 +90,10 @@ if (1==2){
 # # SINGLE RUN ON ROCKFISH
 if (1==1) {
   print("running models parallel ....")
-  
-  args = commandArgs(trailingOnly=TRUE)
   R=10 #reps
   S=5 #scenarios
   
+  args = commandArgs(trailingOnly=TRUE)
   x=as.numeric(args[1])
   rep=floor((x-1)/(S))+1
   scenarioId= (x-1)%%5+1
@@ -106,7 +107,7 @@ if (1==1) {
   # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
   set.seed(rep)
   scenario=scenarios[[scenarioId]]$id
-  print(paste("replication ",rep," scenario", scenario, "starting..."))
+  print(paste("node=",x,"repl= ",rep," scenario=", scenario, "starting..."))
   start_time <- Sys.time()
   pop<-initialize.simulation(id = rep,
                              n = POP.SIZE,

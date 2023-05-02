@@ -1,5 +1,6 @@
-SCENARIOS = c(0:4)
-REPLICATIONS = c(1:8)
+r_path="~/Downloads/newOutputs-0502/"; setwd(r_path)
+SCENARIOS = c(1:5)
+REPLICATIONS = c(1:10)
 
 
 # # Reading populations back into simset objects
@@ -9,7 +10,9 @@ REPLICATIONS = c(1:8)
     temp.simset.ncd = vector("list",length(REPLICATIONS))
     
     invisible(lapply(REPLICATIONS,function(rep){
-      pop<-readRDS(paste0("outputs/popList-s",scenario,"-rep",rep))
+      # pop<-readRDS(paste0("outputs/popList-s",scenario,"-rep",rep))
+      pop<-readRDS(paste0("popList-s",scenario,"-rep",rep))
+      
       print(paste0("reading outputs/popList-s",scenario,"-rep",rep, " for the ncd model"))
       temp.simset.ncd[[rep]] <<- pop
       
