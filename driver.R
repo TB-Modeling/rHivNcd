@@ -47,74 +47,47 @@ scenarios=list(
 )
 #######################################################
 # MULTI REPS
-# print("running models....")
-# lapply(c(1:10),function(rep){
-#   lapply(c(1:5),function(id){
-#     start_time <- Sys.time()
-#     set.seed(rep)
-#     scenario=scenarios[[id]]$id
-#     # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
-#     pop<-initialize.simulation(id = rep,
-#                                n = POP.SIZE,
-#                                scenario=scenario)
-#     #run sims
-#     while(pop$params$CYNOW<= 2030)
-#       run.one.year.int(pop,
-#                        scenario =scenarios[[id]]$id,
-#                        int.start.year = 2023,
-#                        int.end.year = 2030,
-#                        pCoverage = scenarios[[id]]$pCoverage,
-#                        pNcdTrtInitiation = scenarios[[id]]$pNcdTrtInitiation,
-#                        pDropOut=scenarios[[id]]$pDropOut
-#       )
-#     
-#     #saving population
-#     res=list(stats=pop$stats,
-#              params=pop$params)
-#     saveRDS(res,file = paste0("outputs/popList-s",scenario,"-rep",rep),compress = T)
-#     # saving time
-#     end_time <- Sys.time()
-#     session_time=end_time - start_time
-#     txt=paste("Model ",rep," >> session time ",session_time)
-#     write.table(x = txt,file = "outputs/out-sessionTime.txt",col.names = F,row.names = F,append = T)
-#   })
-# })
-
+if (1==2){
+  print("running models sequentially ....")
+  lapply(c(1:1),function(rep){
+    lapply(c(1:5),function(id){
+      start_time <- Sys.time()
+      set.seed(rep)
+      scenario=scenarios[[id]]$id
+      print(paste("replication ",rep," scenario", scenario, "starting..."))
+      
+      # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
+      pop<-initialize.simulation(id = rep,
+                                 n = POP.SIZE,
+                                 scenario=scenario)
+      #run sims
+      while(pop$params$CYNOW<= 2030)
+        run.one.year.int(pop,
+                         scenario =scenarios[[id]]$id,
+                         int.start.year = 2023,
+                         int.end.year = 2030,
+                         pCoverage = scenarios[[id]]$pCoverage,
+                         pNcdTrtInitiation = scenarios[[id]]$pNcdTrtInitiation,
+                         pDropOut=scenarios[[id]]$pDropOut
+        )
+      
+      #saving population
+      res=list(stats=pop$stats,
+               params=pop$params)
+      saveRDS(res,file = paste0("outputs/popList-s",scenario,"-rep",rep),compress = T)
+      # saving time
+      end_time <- Sys.time()
+      session_time=end_time - start_time
+      txt=paste("Model ",rep," >> session time ",session_time)
+      write.table(x = txt,file = "outputs/out-sessionTime.txt",col.names = F,row.names = F,append = T)
+    })
+  })
+}
 # # #######################################################
-# {
-#    set.seed(100) 
-#   # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
-#   pop<-initialize.simulation(id = rep, 
-#                              n = 1000,
-#                              scenario=0)
-#   
-#   scenarios=list(
-#     list(id=0,pCoverage=0.0,pNcdTrtInitiation=0.0,pDropOut=0.00),
-#     list(id=1,pCoverage=0.1,pNcdTrtInitiation=0.8,pDropOut=0.05),
-#     list(id=2,pCoverage=0.1,pNcdTrtInitiation=0.9,pDropOut=0.00),
-#     list(id=3,pCoverage=0.1,pNcdTrtInitiation=0.8,pDropOut=0.05),
-#     list(id=4,pCoverage=0.1,pNcdTrtInitiation=0.9,pDropOut=0.00)
-#   )
-#   # choose which scenario id should run
-#   id=4 #0 to 5
-#   #run sims
-#   while(pop$params$CYNOW<= 2030)
-#     run.one.year.int(pop,
-#                      scenario =scenarios[[id]]$id,
-#                      int.start.year = 2023,
-#                      int.end.year = 2030,
-#                      pCoverage = scenarios[[id]]$pCoverage,
-#                      pNcdTrtInitiation = scenarios[[id]]$pNcdTrtInitiation,
-#                      pDropOut=scenarios[[id]]$pDropOut
-#                     )
-#   
-#   #saving population
-#   res=list(stats=pop$stats,
-#            params=pop$params)
-# }
-# #######################################################
-# SINGLE RUN ON ROCKFISH
-{
+# # SINGLE RUN ON ROCKFISH
+if (1==1) {
+  print("running models parallel ....")
+  
   args = commandArgs(trailingOnly=TRUE)
   R=10 #reps
   S=5 #scenarios
