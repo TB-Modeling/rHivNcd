@@ -1,101 +1,102 @@
+SCENARIOS = c(0:4)
+REPLICATIONS = c(1:8)
 
-# # Reading populations back into a simset object
+
+# # Reading populations back into simset objects
 {
-  # scenario 0
-  SCENARIOS = c(1:5)
-  REPLICATIONS = c(0:2)
-  
-  ncd.simset=vector("list",5)
-  invisible(lapply(c(1:5), function(scenario){
-    temp.simset = vector("list",2)
+  ncd.simset=vector("list",length(SCENARIOS))
+  invisible(lapply(SCENARIOS, function(scenario){
+    temp.simset.ncd = vector("list",length(REPLICATIONS))
     
-    invisible(lapply(c(1:2),function(rep){
+    invisible(lapply(REPLICATIONS,function(rep){
       pop<-readRDS(paste0("outputs/popList-s",scenario,"-rep",rep))
-      temp.simset[[rep]] <<- pop
+      print(paste0("reading outputs/popList-s",scenario,"-rep",rep, " for the ncd model"))
+      temp.simset.ncd[[rep]] <<- pop
       
-      return(temp.simset)
+      return(temp.simset.ncd)
     }))
     
-    ncd.simset[[scenario]]<<-temp.simset 
+    ncd.simset[[scenario+1]]<<-temp.simset.ncd # if still using scenario 0; make this scenario + 1
     return(ncd.simset)
   }))
   
+  khm.simset=vector("list",length(SCENARIOS))
+  invisible(lapply(SCENARIOS, function(scenario){
+    temp.simset.khm = vector("list",length(REPLICATIONS))
+    
+    invisible(lapply(REPLICATIONS,function(rep){
+      pop<-readRDS(paste0("outputs/popList-s",scenario,"-rep",rep))
+      print(paste0("reading outputs/popList-s",scenario,"-rep",rep, " for the hiv model"))
+      temp.simset.khm[[rep]] <<- pop$params$khm
+      
+      return(temp.simset.khm)
+    }))
+
+    khm.simset[[scenario+1]]<<-temp.simset.khm # if still using scenario 0; make this scenario + 1
+    return(khm.simset)
+  }))
   
-  khm.simset.0 = ncd.simset.0[[1]]$params$khm.full
-  khm.0.ids = sapply(ncd.simset.0,function(pop){pop$params$khm.id})
-  khm.simset.0=khm.simset.0[khm.0.ids]
-  class(khm.simset.0)="khm_simulation_output"
+  for(i in 1:length(SCENARIOS)){
+    class(khm.simset[[i]]) = "khm_simulation_output"
+  }
   
-  # scenario 1
-  ncd.simset.1=list()
-  lapply(c(1:2),function(rep){
-    pop<-readRDS(sprintf("outputs/popList-s1-rep%g",rep))
-    ncd.simset.1[[sprintf("popList-s0-rep%g",rep)]]<<-pop
-  })
+}
+{
+  simplot(
+    khm.simset[[1]],
+    ncd.simset[[1]],
+    #khm.simset[[2]],
+    #ncd.simset[[2]],
+    # khm.simset[[3]],
+    # ncd.simset[[3]],
+    # khm.simset[[4]],
+    # ncd.simset[[4]],
+    # khm.simset[[5]],
+    # ncd.simset[[5]],
+    facet.by = "age",
+    data.type = "population",scale.population = T)
   
-  khm.simset.1 = ncd.simset.1[[1]]$params$khm.full
-  khm.1.ids = sapply(ncd.simset.1,function(pop){pop$params$khm.id})
-  khm.simset.1=khm.simset.1[khm.1.ids]
-  class(khm.simset.1)="khm_simulation_output"
+  simplot(khm.simset[[1]],khm.simset[[2]],khm.simset[[3]],khm.simset[[4]],khm.simset[[5]],
+          data.type = "hiv.incidence",scale.population = F)
   
-  # scenario 2
-  ncd.simset.2=list()
-  lapply(c(1:2),function(rep){
-    pop<-readRDS(sprintf("outputs/popList-s2-rep%g",rep))
-    ncd.simset.2[[sprintf("popList-s0-rep%g",rep)]]<<-pop
-  })
+  simplot(ncd.simset[[1]],ncd.simset[[2]],ncd.simset[[3]],ncd.simset[[4]],ncd.simset[[5]],
+          data.type = "hyp.prev",scale.population = F, view.as.rate = T, per.X.population = 1)
   
-  khm.simset.2 = ncd.simset.2[[1]]$params$khm.full
-  khm.2.ids = sapply(ncd.simset.2,function(pop){pop$params$khm.id})
-  khm.simset.2=khm.simset.2[khm.2.ids]
-  class(khm.simset.2)="khm_simulation_output"
+  simplot(ncd.simset[[1]],ncd.simset[[2]],ncd.simset[[3]],ncd.simset[[4]],ncd.simset[[5]],
+          data.type = "diab.prev",scale.population = F, view.as.rate = T, per.X.population = 1)
   
-  # scenario 3
-  ncd.simset.3=list()
-  lapply(c(1:2),function(rep){
-    pop<-readRDS(sprintf("outputs/popList-s3-rep%g",rep))
-    ncd.simset.3[[sprintf("popList-s0-rep%g",rep)]]<<-pop
-  })
+  simplot(ncd.simset[[1]],ncd.simset[[5]],
+          data.type = "stroke.inc", facet.by = "age",scale.population=F, view.as.rate = T, per.X.population = 100000)
   
-  khm.simset.3 = ncd.simset.3[[1]]$params$khm.full
-  khm.3.ids = sapply(ncd.simset.3,function(pop){pop$params$khm.id})
-  khm.simset.3=khm.simset.3[khm.3.ids]
-  class(khm.simset.3)="khm_simulation_output"
+  simplot(ncd.simset[[1]],
+          #ncd.simset[[2]],ncd.simset[[3]],ncd.simset[[4]],
+          ncd.simset[[5]],
+          data.type = "stroke.inc",scale.population=F, view.as.rate = F)
   
-  # scenario 4
-  ncd.simset.4=list()
-  lapply(c(1:2),function(rep){
-    pop<-readRDS(sprintf("outputs/popList-s4-rep%g",rep))
-    ncd.simset.4[[sprintf("popList-s0-rep%g",rep)]]<<-pop
-  })
+  simplot(ncd.simset[[1]],
+          #ncd.simset[[2]],ncd.simset[[3]],ncd.simset[[4]],
+          ncd.simset[[5]],
+          data.type = "mi.inc",scale.population = F, view.as.rate = F)
+
+  simplot(ncd.simset[[1]],
+          #ncd.simset[[2]],
+          ncd.simset[[3]],
+          #ncd.simset[[4]],
+          # ncd.simset[[5]],
+          data.type = "cvd.mortality",scale.population=F, view.as.rate = F,
+          facet.by = "hiv.status")
   
-  khm.simset.4 = ncd.simset.4[[1]]$params$khm.full
-  khm.4.ids = sapply(ncd.simset.4,function(pop){pop$params$khm.id})
-  khm.simset.4=khm.simset.4[khm.4.ids]
-  class(khm.simset.4)="khm_simulation_output"
+  apply(ncd.simset[[1]][[1]]$stats$n.stroke.inc,5,sum)
+  apply(ncd.simset[[2]][[1]]$stats$n.stroke.inc,5,sum)
+  apply(ncd.simset[[3]][[1]]$stats$n.stroke.inc,5,sum)
+  apply(ncd.simset[[4]][[1]]$stats$n.stroke.inc,5,sum)
+  apply(ncd.simset[[5]][[1]]$stats$n.stroke.inc,5,sum)
   
-  ncd.simset = list()
-  ncd.simset[[1]] = ncd.simset.0
-  ncd.simset[[2]] = ncd.simset.1
-  ncd.simset[[3]] = ncd.simset.2
-  ncd.simset[[4]] = ncd.simset.3
-  ncd.simset[[5]] = ncd.simset.4
-  
-  khm.simset = list()
-  khm.simset[[1]] = khm.simset.0
-  khm.simset[[2]] = khm.simset.1
-  khm.simset[[3]] = khm.simset.2
-  khm.simset[[5]] = khm.simset.4
-  
-  simsets = c(paste0("khm.simset.",rep(1:4)),paste0("ncd.simset.",rep(1:4)))
-  
-  simplot(khm.simset.0, khm.simset.1, khm.simset.2, khm.simset.3, khm.simset.4,
-          # ncd.simset.0, ncd.simset.1, ncd.simset.2, ncd.simset.3, ncd.simset.4,
-          data.type = "hiv.incidence",scale.population = T)
-  
-  simplot(ncd.simset.0, #ncd.simset.1, ncd.simset.2,
-          ncd.simset.3, ncd.simset.4,
-          data.type = "hyp.prev",scale.population = F)
+  apply(ncd.simset[[1]][[1]]$stats$n.mi.inc,5,sum)
+  apply(ncd.simset[[2]][[1]]$stats$n.mi.inc,5,sum)
+  apply(ncd.simset[[3]][[1]]$stats$n.mi.inc,5,sum)
+  apply(ncd.simset[[4]][[1]]$stats$n.mi.inc,5,sum)
+  apply(ncd.simset[[5]][[1]]$stats$n.mi.inc,5,sum)
 }
 {
   print(paste0(length(simset)," ncd populationd data is read"))
