@@ -11,6 +11,7 @@
 # if(length(new.packages)) install.packages(new.packages)
 
 library(R6)
+library(data.table)
 # library(Rcpp)
 library(ggplot2)
 # library(data.table)
@@ -48,30 +49,29 @@ scenarios=list(
 # MULTI REPS
 print("running models....")
 lapply(c(1:10),function(rep){
-  lapply(c(1:5),function(scenarioId){
+  lapply(c(1:5),function(id){
     start_time <- Sys.time()
     set.seed(rep)
-    
+    scenario=scenarios[[id]]$id
     # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
     pop<-initialize.simulation(id = rep,
                                n = POP.SIZE,
-                               scenario=2) #'@MS: add the hiv.simset for 5 scenarios
-                               # scenario=scenarioId)
+                               scenario=scenario)
     #run sims
     while(pop$params$CYNOW<= 2030)
       run.one.year.int(pop,
-                       scenario =scenarios[[scenarioId]]$id,
+                       scenario =scenarios[[id]]$id,
                        int.start.year = 2023,
                        int.end.year = 2030,
-                       pCoverage = scenarios[[scenarioId]]$pCoverage,
-                       pNcdTrtInitiation = scenarios[[scenarioId]]$pNcdTrtInitiation,
-                       pDropOut=scenarios[[scenarioId]]$pDropOut
+                       pCoverage = scenarios[[id]]$pCoverage,
+                       pNcdTrtInitiation = scenarios[[id]]$pNcdTrtInitiation,
+                       pDropOut=scenarios[[id]]$pDropOut
       )
     
     #saving population
     res=list(stats=pop$stats,
              params=pop$params)
-    saveRDS(res,file = paste0("outputs/popList-s",scenarioId,"-rep",rep),compress = T)
+    saveRDS(res,file = paste0("outputs/popList-s",scenario,"-rep",rep),compress = T)
     # saving time
     end_time <- Sys.time()
     session_time=end_time - start_time

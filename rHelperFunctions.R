@@ -80,14 +80,14 @@ print("loading function return.prop.sex.age")
 return.prop.sex.age<-function(vFreq){
   vProp=vFreq
   if (length(dim(vFreq))==4){
-    print("detected 4 dimensions")
+    # print("detected 4 dimensions")
     invisible(sapply(1:length(DIM.NAMES.SEX), function(sex){
       sapply(1:length(DIM.NAMES.AGE), function(age){
         vProp[age,sex,,]<<-vProp[age,sex,,]/sum(vFreq[age,sex,,]) 
       })}))
   }
   if (length(dim(vFreq))==3){
-    print("detected 3 dimensions")
+    # print("detected 3 dimensions")
     invisible(sapply(1:length(DIM.NAMES.SEX), function(sex){
       sapply(1:length(DIM.NAMES.AGE), function(age){
         vProp[age,sex,]<<-vProp[age,sex,]/sum(vFreq[age,sex,]) 
