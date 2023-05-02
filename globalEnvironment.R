@@ -16,7 +16,7 @@ END.YEAR=2030 #simulation ends
 AGE.INTERVAL=5
 MIN.AGE=0
 MAX.AGE=85*12
-POP.SIZE=10
+POP.SIZE=100000
 #
 FEMALE=1
 MALE=2
@@ -70,6 +70,7 @@ generate.new.modelParameter<-function(scenario){
   
   ########################################################
   #1- load HIV data  
+  print(paste0("reading data/hiv_simset_scenario",scenario,".RData ..."))
   load(paste0("data/hiv_simset_scenario",scenario,".RData")) # extended name for different datasets from KHM
   
   MP$khm.full=khm.full # leaving full simset in here for plotting purposes
