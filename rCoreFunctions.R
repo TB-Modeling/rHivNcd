@@ -591,8 +591,8 @@ run.one.year.int<-function(pop,
       
       # HIV births - putting into undiagnosed for now
       absolute.n.births.hiv=khm$target.parameters$hiv.births[as.character(pop$params$CYNOW)] # total HIV births from HIV model
-      hiv.births.scalar = absolute.n.births.hiv/sum(khm$population[as.character(pop$params$CYNOW),,,]) # scaled to pop size from HIV model
-      n.births.hiv = round(hiv.births.scalar*length(pop$members),0) # re-scaled to pop size from NCD mode
+      hiv.births.scalar = absolute.n.births.hiv/sum(khm$population[as.character(pop$params$CYNOW),-1,,]) # scaled to HIV pop size from HIV model
+      n.births.hiv = round(hiv.births.scalar*sum(pop$return.state.size.distribution()[,,-1,,]),0) # re-scaled to HIV pop size from NCD mode
       #distribute births over months
       n.births.hiv.per.month=rep(0,ANNUAL.TIMESTEPS)
       if(n.births.hiv>0)
@@ -750,7 +750,7 @@ model.ncd.intervention<-function(pop,
   ##
   selectedIds=NULL
   # intervention focused at HIV clinic (among HIV.ENG)
-  if (scenario %in% c(1,2)){
+  if (scenario %in% c(2,3)){
     # vector of Ids for those eligible to receive the intervention 
     vIds=c()
     invisible(lapply(c(1:length(pop$members)),function(x){

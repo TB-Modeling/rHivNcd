@@ -92,7 +92,7 @@ dev.off()
   plottingYear="2015"
   ##
   D<-lapply(c(1:reps),function(x){
-    pop=ncd.simset[[x]]
+    pop=ncd.simset[[1]][[x]]
     res=filter.5D.stats.by.field(pop$stats$n.state.sizes,years = plottingYear,keep.dimensions = c("year","age","sex" ))
     res<-as.data.frame(rbind(res[,,1],res[,,2]));
     res=res/rowSums(res)
@@ -104,7 +104,7 @@ dev.off()
   ncd.pop=D
   ##
   D=lapply(c(1:reps),function(x){
-    khm=khm.simset[[x]]
+    khm=khm.simset[[1]][[x]]
     res=return.khm.data(khm.output=khm,
                         data.type = "population",
                         years=plottingYear,
@@ -132,9 +132,9 @@ dev.off()
 # mapping each year's age dist relative to agegroup size in 2015 (all plots start from 1)
 {
   plottingYear=as.character(c(2015:2030))
-  N=length(ncd.simset)
+  N=length(ncd.simset[[1]])
   #NCD
-  D=lapply(ncd.simset,function(pop){
+  D=lapply(ncd.simset[[1]],function(pop){
     res=as.data.frame(filter.5D.stats.by.field(pop$stats$n.state.sizes,
                                                ages = DIM.NAMES.AGE ,
                                                sex="FEMALE",
@@ -151,7 +151,7 @@ dev.off()
   ncd.pop=D
   
   #KHM
-  D=lapply(khm.simset,function(khm){
+  D=lapply(khm.simset[[1]],function(khm){
     res= as.data.frame(return.khm.data(khm.output=khm,
                                        data.type = "population",
                                        ages = DIM.NAMES.AGE,

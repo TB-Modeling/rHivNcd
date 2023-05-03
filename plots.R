@@ -110,8 +110,11 @@ simplot = function(..., # can pass any combination of single simulations or full
                    data.type = c("population"), 
                    # population, hiv.incidence, hiv.prevalence, hyp.inc, diab.inc, diab.hyp.inc, hyp.prev, diab.prev, diab.hyp.prev, mi.inc, stroke.inc
                    scale.population = F,
+                   scale.to.year = "2015",
                    view.as.rate = F,
                    per.X.population = 10000,
+                   combine.comorbidity = F,
+                   show.treated = F,
                    facet.by = NULL,
                    split.by = NULL,
                    ages = DIM.NAMES.AGE, 
@@ -139,7 +142,7 @@ simplot = function(..., # can pass any combination of single simulations or full
                         "non.hiv.mortality"="n.deaths.non.hiv")
   
   if(scale.population & view.as.rate)
-    stop("can't choose both scale.population (scaled to 2015 value) and view.as.rate (per X pop) - must select one")
+    stop("can't choose both scale.population (scaled to scale.to.year value) and view.as.rate (per X pop) - must select one")
   
   df.sim = NULL
   
@@ -184,13 +187,33 @@ simplot = function(..., # can pass any combination of single simulations or full
                                            ncd.status = ncd.status,
                                            keep.dimensions = keep.dimensions)
         } else if(data.type %in% c("hyp.prev","diab.prev","diab.hyp.prev")){
-          if(data.type=="hyp.prev")
-            ncd.status = "NCD.HYP"
-          else if(data.type=="diab.prev")
-            ncd.status = "NCD.DIAB"
-          else if(data.type=="diab.hyp.prev")
-            ncd.status = "NCD.DIAB_HYP"
           
+          if(combine.comorbidity) {
+            
+            if(show.treated){
+              ncd.status = c("NCD.HYP","NCD.DIAB_HYP","NCD.DIAB.TRT","NCD.HYP.TRT","NCD.DIAB_HYP.TRT")
+            } else
+              ncd.status = c("NCD.HYP","NCD.DIAB_HYP")
+            
+          } else {
+            if (data.type=="hyp.prev"){
+              if(show.treated){
+                ncd.status = c("NCD.HYP","NCD.HYP.TRT")
+              } else
+                ncd.status = "NCD.HYP"
+            } else if(data.type=="diab.prev"){
+              if(show.treated){
+                ncd.status = c("NCD.DIAB","NCD.DIAB.TRT")
+              } else
+                ncd.status = "NCD.DIAB"
+            } else if(data.type=="diab.hyp.prev"){
+              if(show.treated){
+                ncd.status = c("NCD.DIAB_HYP","NCD.DIAB_HYP.TRT")
+              } else
+                ncd.status = "NCD.DIAB_HYP"
+            }
+          }
+      
           # note that this overrides any ncd.status specified in the arguments
           value = filter.5D.stats.by.field(sim[[j]]$stats$n.state.sizes, 
                                            years = years,
@@ -209,17 +232,17 @@ simplot = function(..., # can pass any combination of single simulations or full
           
           # Keep dimensions = year only 
           if(setequal(keep.dimensions,"year")){
-            if(value[years=="2015"]==0) # can't divide by 0, set to 1 for now 
-              value[years=="2015"]=1
-            value = value/value[years=="2015"]
+            if(value[years==scale.to.year]==0) # can't divide by 0, set to 1 for now 
+              value[years==scale.to.year]=1
+            value = value/value[years==scale.to.year]
             
             # 2 keep dimensions 
           } else if(length(keep.dimensions)==2){
             value = sapply(1:dim(value)[2],function(j){
               sapply(1:dim(value)[1],function(i){
-                if(value["2015",j]==0) # can't divide by 0, set to 1 for now 
-                  value["2015",j]=1
-                value[i,j]/value["2015",j]
+                if(value[scale.to.year,j]==0) # can't divide by 0, set to 1 for now 
+                  value[scale.to.year,j]=1
+                value[i,j]/value[scale.to.year,j]
               })
             })
             if (setequal(keep.dimensions, c('year','age'))){
@@ -242,9 +265,9 @@ simplot = function(..., # can pass any combination of single simulations or full
             value = sapply(1:dim(value)[3],function(k){
               sapply(1:dim(value)[2],function(j){
                 sapply(1:dim(value)[1],function(i){
-                  if(value["2015",j,k]==0) # can't divide by 0, set to 1 for now 
-                    value["2015",j,k]=1
-                  value[i,j,k]/value["2015",j,k]  
+                  if(value[scale.to.year,j,k]==0) # can't divide by 0, set to 1 for now 
+                    value[scale.to.year,j,k]=1
+                  value[i,j,k]/value[scale.to.year,j,k]  
                 })
               })
             })
@@ -330,13 +353,13 @@ simplot = function(..., # can pass any combination of single simulations or full
           
           # Keep dimensions = year only 
           if(setequal(keep.dimensions,"year")){
-            value = value/value[years=="2015"]
+            value = value/value[years==scale.to.year]
             
             # 2 keep dimensions 
           } else if(length(keep.dimensions)==2){
             value = sapply(1:dim(value)[2],function(j){
               sapply(1:dim(value)[1],function(i){
-                value[i,j]/value["2015",j]
+                value[i,j]/value[scale.to.year,j]
               })
             })
             if (setequal(keep.dimensions, c('year','age'))){
@@ -356,7 +379,7 @@ simplot = function(..., # can pass any combination of single simulations or full
             value = sapply(1:dim(value)[3],function(k){
               sapply(1:dim(value)[2],function(j){
                 sapply(1:dim(value)[1],function(i){
-                  value[i,j,k]/value["2015",j,k]  
+                  value[i,j,k]/value[scale.to.year,j,k]  
                 })
               })
             })
@@ -407,10 +430,28 @@ simplot = function(..., # can pass any combination of single simulations or full
     df.sim$group.id = paste0(df.sim$group.id,", ",s,"=",df.sim[,s])
   }
   
+  # data.type label
+  if(combine.comorbidity){
+    if(show.treated){
+      data.type.label = paste0(data.type, "(including those on treatment), combined single disease burden and hyp/diab comorbidity")  
+    } else 
+      data.type.label = paste0(data.type, "(excluding those on treatment), combined single disease burden and hyp/diab comorbidity")  
+  } else {
+    if((data.type %in% c("hyp.prev","diab.prev"))){
+      if(show.treated){
+        data.type.label = paste0(data.type, "(including those on treatment, single disease burden; no comorbidity")
+      } else
+        data.type.label = paste0(data.type, "(excluding those on treatment), single disease burden; no comorbidity")
+    } else
+      data.type.label = data.type
+  }
+
+  
+  
   # sub title 
   sub.title.label = NULL
   if(scale.population)
-    sub.title.label = "scaled to 2015 value"  
+    sub.title.label = paste0("scaled to ",scale.to.year," value")
   if(view.as.rate)
     sub.title.label = paste0("per ",per.X.population," population")
   
@@ -421,14 +462,14 @@ simplot = function(..., # can pass any combination of single simulations or full
     plot = ggplot() + 
       geom_line(data = df.sim, aes(x = year, y = value, color = sim.id, group = group.id)) +
       facet_wrap(facet_formula, scales = "free_y") + 
-      labs(title = paste0(data.type),
+      labs(title = paste0(data.type.label),
            subtitle = paste0(sub.title.label)
            )+
       ylim(0,NA)
   } else{
     plot = ggplot() + 
       geom_line(data = df.sim, aes(x = year, y = value, color = sim.id, group = group.id)) +
-      labs(title = paste0(data.type),
+      labs(title = paste0(data.type.label),
            subtitle = paste0(sub.title.label)
       )+
       ylim(0,NA)
