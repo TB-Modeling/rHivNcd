@@ -4,9 +4,9 @@
 #6-10:  10X risk by HIV
 #11-15: 1.1 annual ncd prev growth
 {  
-  reps=5
+  reps=30
   simset=list()
-  invisible(lapply(c((1:reps)+10),function(rep){
+  invisible(lapply(c((1:reps)+0),function(rep){
     pop<-readRDS(sprintf("outputs/popList-%g",rep))
     simset[[sprintf("pop%g",rep)]]<<-pop
   }))
