@@ -11,11 +11,11 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=4GB
-#SBATCH --array=1-50
+#SBATCH --array=1-150
 #SBATCH --output=outputs/outSlurm_%a.out
 #SBATCH --error=outputs/outSlurm_%a.err
 #SBATCH --mail-type=end
-#SBATCH --mail-user=pkasaie@jhu.edu
+#SBATCH --mail-user=mschnur3@jhu.edu
 
 
 module load r

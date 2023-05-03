@@ -28,7 +28,7 @@ read.ncd.simset = function(){
       
       return(temp.simset.ncd)
     }))
-    
+
     ncd.simset[[scenario]]<<-temp.simset.ncd # if still using scenario 0; make this scenario + 1
     return(ncd.simset)
   }))

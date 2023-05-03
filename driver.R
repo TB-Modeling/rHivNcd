@@ -48,11 +48,11 @@ scenarios=list(
 #######################################################
 # MULTI REPS
 if (1==2){
-  R=5 #reps
+  R=1 #reps
   S=5 #scenarios
   print("running models sequentially ....")
   lapply(c(1:R),function(rep){
-    lapply(c(1:S),function(id){
+    lapply(c(S),function(id){
       start_time <- Sys.time()
       set.seed(rep)
       scenario=scenarios[[id]]$id
