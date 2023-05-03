@@ -2,6 +2,7 @@
 
 #10 pops with a 500K persons
 r_path="~/OneDrive - Johns Hopkins/HIV NCD modeling/MELISSA/Model/rHivNcd/"
+
 setwd(r_path)
 setwd("outputs/")
 
