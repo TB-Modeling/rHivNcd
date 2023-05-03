@@ -1,63 +1,63 @@
-
+# 
 source("plots.R")
-source("globalEnvironment.R")
-source("rHelperFunctions.R")
-# moved all functions to this file so I can just source it 
+# source("globalEnvironment.R")
+# source("rHelperFunctions.R")
+# # moved all functions to this file so I can just source it 
 source("postProcessingFunctions.R")
 
- setwd("outputs/outputs-0503//")
-SCENARIOS = c(1:5)
-REPLICATIONS = c(1:30)
+ # setwd("outputs/outputs-0503//")
+#' SCENARIOS = c(1:5)
+#' REPLICATIONS = c(1:30)
+#' 
+#' ncd.simset[[1]][[1]]$stats$pop.size
+#' # # Reading populations back into simset objects
+#' 
+#'   ncd.simset=vector("list",length(SCENARIOS))
+#'   invisible(lapply(SCENARIOS, function(scenario){
+#'     temp.simset.ncd = vector("list",length(REPLICATIONS))
+#'     
+#'     invisible(lapply(REPLICATIONS,function(rep){
+#'       # pop<-readRDS(paste0("outputs/popList-s",scenario,"-rep",rep))
+#'       pop<-readRDS(paste0("popList-s",scenario,"-rep",rep))
+#'       
+#'       print(paste0("reading outputs/popList-s",scenario,"-rep",rep, " for the ncd model"))
+#'       temp.simset.ncd[[rep]] <<- pop
+#'       
+#'       return(temp.simset.ncd)
+#'     }))
+#'     # print(paste(length(temp.simset.ncd),"reps read"))
+#'     ncd.simset[[scenario]]<<-temp.simset.ncd # if still using scenario 0; make this scenario + 1
+#'     return(ncd.simset)
+#'   }))
+#'   print(paste(length(ncd.simset)," ncd outputs read with",length(ncd.simset[[1]]),"reps"))
+#'   
+#' 
+#'   #'@MS: since all 5 scenarios are using the same seeds, they're using the same khm pops, 
+#'   #'you can read khm pops for one scenario and copy it for other scenarios
+#'   khm.simset=vector("list",length(SCENARIOS))
+#'   invisible(lapply(SCENARIOS, function(scenario){
+#'     temp.simset.khm = vector("list",length(REPLICATIONS))
+#'     invisible(lapply(REPLICATIONS,function(rep){
+#'       pop<-readRDS(paste0("popList-s",scenario,"-rep",rep))
+#'       print(paste0("reading outputs/popList-s",scenario,"-rep",rep, " for the hiv model"))
+#'       temp.simset.khm[[rep]] <<- pop$params$khm
+#'       print(pop$params$khm.id)
+#'       return(temp.simset.khm)
+#'     }))
+#' 
+#'     khm.simset[[scenario]]<<-temp.simset.khm # if still using scenario 0; make this scenario + 1
+#'     return(khm.simset)
+#'   }))
+#'   print(paste(length(khm.simset)," khm outputs read with",length(khm.simset[[1]]),"reps"))
+#'   
+#'   # invisible(lapply(SCENARIOS, function(scenario){
+#'   #   lapply(REPLICATIONS,function(rep){
+#'   #     print(paste(scenario,"--",rep,"--",khm.simset[[scenario]][[rep]]$id))
+#'   #   })}))
+#'     
 
-ncd.simset[[1]][[1]]$stats$pop.size
-# # Reading populations back into simset objects
-
-  ncd.simset=vector("list",length(SCENARIOS))
-  invisible(lapply(SCENARIOS, function(scenario){
-    temp.simset.ncd = vector("list",length(REPLICATIONS))
-    
-    invisible(lapply(REPLICATIONS,function(rep){
-      # pop<-readRDS(paste0("outputs/popList-s",scenario,"-rep",rep))
-      pop<-readRDS(paste0("popList-s",scenario,"-rep",rep))
-      
-      print(paste0("reading outputs/popList-s",scenario,"-rep",rep, " for the ncd model"))
-      temp.simset.ncd[[rep]] <<- pop
-      
-      return(temp.simset.ncd)
-    }))
-    # print(paste(length(temp.simset.ncd),"reps read"))
-    ncd.simset[[scenario]]<<-temp.simset.ncd # if still using scenario 0; make this scenario + 1
-    return(ncd.simset)
-  }))
-  print(paste(length(ncd.simset)," ncd outputs read with",length(ncd.simset[[1]]),"reps"))
-  
-
-  #'@MS: since all 5 scenarios are using the same seeds, they're using the same khm pops, 
-  #'you can read khm pops for one scenario and copy it for other scenarios
-  khm.simset=vector("list",length(SCENARIOS))
-  invisible(lapply(SCENARIOS, function(scenario){
-    temp.simset.khm = vector("list",length(REPLICATIONS))
-    invisible(lapply(REPLICATIONS,function(rep){
-      pop<-readRDS(paste0("popList-s",scenario,"-rep",rep))
-      print(paste0("reading outputs/popList-s",scenario,"-rep",rep, " for the hiv model"))
-      temp.simset.khm[[rep]] <<- pop$params$khm
-      print(pop$params$khm.id)
-      return(temp.simset.khm)
-    }))
-
-    khm.simset[[scenario]]<<-temp.simset.khm # if still using scenario 0; make this scenario + 1
-    return(khm.simset)
-  }))
-  print(paste(length(khm.simset)," khm outputs read with",length(khm.simset[[1]]),"reps"))
-  
-  # invisible(lapply(SCENARIOS, function(scenario){
-  #   lapply(REPLICATIONS,function(rep){
-  #     print(paste(scenario,"--",rep,"--",khm.simset[[scenario]][[rep]]$id))
-  #   })}))
-    
-
-SCENARIOS = c(1:5)
-REPLICATIONS = c(1:30)
+SCENARIOS = c(5)
+REPLICATIONS = c(1)
 
 ncd.simset=read.ncd.simset()
 khm.simset=read.khm.simset()
@@ -104,9 +104,10 @@ khm.simset.full = read.khm.simset.full()
   # NCD PREVALENCE - new option to combine comorbidity 
   simplot(ncd.simset[[1]],
           data.type = "hyp.prev",
-          facet.by = c("age"),
+          # facet.by = c("ncd.status"),
           scale.population = F,
-          combine.comorbidity = F
+          combine.comorbidity = F,
+          show.treated = T
           #view.as.rate = T, per.X.population = 1
           )
   

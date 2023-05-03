@@ -233,6 +233,9 @@ update.ncd.states<-function(pop){
   #2-annual growth in age/sex-specific prev of ncds
   # MP$annual.growth.ncd.prev=1
   
+  #we are merging those on ncd trt with those who are untreated for the purpose of modeling new events
+  # therefore reducing ncd dimension from 7 to 4
+  dim.ncd.states=4 # we have 4 eligible ncd states that we are using to model ncd events 
   
   # TARGET PREV OF NCDs BASED ON 2015, HIV STATUS AND ANNUAL GROWTH
   target.ncd.props=pop$params$target.ncd.props 
@@ -243,24 +246,37 @@ update.ncd.states<-function(pop){
   #2-multiply by rhe annual growth factor:
   target.ncd.props= pop$params$annual.growth.ncd.prev^(pop$params$CYNOW-INITIAL.YEAR)  * target.ncd.props
   
+ #removing trt states for ncds
+  target.ncd.props<-target.ncd.props[,,,c(1:4)]
+  dimnames(target.ncd.props)
   #'@MS: we will return to this to figure out a way to distribute risk by age/sex dist
+  
+ 
   
   # DIAB HYP #######################################
   # CURRENT NCD state sizes & prop
   current.ncd.states = filter.5D.stats.by.field(pop$return.state.size.distribution(),
                                                 years = as.character(pop$params$CYNOW),
                                                 keep.dimensions = c('age','sex','hiv.status','ncd.status','year'))[,,,,1]#to remove year dimension
+  #merging NCD trt into untreated states for the purpose of modeling new events
+  current.ncd.states[,,,"NCD.DIAB"]<-current.ncd.states[,,,"NCD.DIAB"]+current.ncd.states[,,,"NCD.DIAB.TRT"]
+  current.ncd.states[,,,"NCD.HYP"]<-current.ncd.states[,,,"NCD.HYP"]+current.ncd.states[,,,"NCD.HYP.TRT"]
+  current.ncd.states[,,,"NCD.DIAB_HYP"]<-current.ncd.states[,,,"NCD.DIAB_HYP"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT"]
+  current.ncd.states<-current.ncd.states[,,,c(1:4)]
+  
   current.ncd.props<-return.prop.sex.age(vFreq = current.ncd.states)
+  # dimnames(current.ncd.props)
   # dimnames(current.ncd.props);dimnames(current.ncd.states)
   
   diff.props =  target.ncd.props-current.ncd.props
   
   # ADDITIONAL Transitions required to reach the target proportions in our current population:
   trans.freq=diff.props
+ 
   invisible(lapply(1:DIM.AGE, function(ag){
     lapply(1:DIM.SEX, function(sex){
       lapply(1:DIM.HIV, function(hiv){
-        lapply(1:DIM.NCD, function(ncd){
+        lapply(1:dim.ncd.states, function(ncd){
           trans.freq[ag,sex,hiv,ncd]<<-diff.props[ag,sex,hiv,ncd]*sum(current.ncd.states[ag,sex,hiv,]) # the required number of new transitions
         })})})}))
   trans.freq[trans.freq<0]<-0
@@ -279,8 +295,7 @@ update.ncd.states<-function(pop){
   
   # TRANSITION to DH from D or H
   invisible(lapply(pop$members,function(p){
-    # if(p$ncdState==NCD.DIAB || p$ncdState==NCD.HYP ||p$ncdState==NCD.DIAB.TRT || p$ncdState==NCD.HYP.TRT){
-    if(p$ncdState==NCD.DIAB || p$ncdState==NCD.HYP){
+    if(p$ncdState==NCD.DIAB || p$ncdState==NCD.HYP ||p$ncdState==NCD.DIAB.TRT || p$ncdState==NCD.HYP.TRT){
       if(runif(1) < trans.prob.diab.hyp[p$agegroup,p$sex,p$hivState]){
         pop$record.diab.hyp.inc(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$model.diab.hyp.inc(pop$params$TNOW)
@@ -290,6 +305,12 @@ update.ncd.states<-function(pop){
   current.ncd.states = filter.5D.stats.by.field(pop$return.state.size.distribution(),
                                                 years = as.character(pop$params$CYNOW),
                                                 keep.dimensions = c('age','sex','hiv.status','ncd.status','year'))[,,,,1]#to remove year dimension
+  #merging NCD trt into untreated states for the purpose of modeling new events
+  current.ncd.states[,,,"NCD.DIAB"]<-current.ncd.states[,,,"NCD.DIAB"]+current.ncd.states[,,,"NCD.DIAB.TRT"]
+  current.ncd.states[,,,"NCD.HYP"]<-current.ncd.states[,,,"NCD.HYP"]+current.ncd.states[,,,"NCD.HYP.TRT"]
+  current.ncd.states[,,,"NCD.DIAB_HYP"]<-current.ncd.states[,,,"NCD.DIAB_HYP"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT"]
+  current.ncd.states<-current.ncd.states[,,,c(1:4)]
+  
   current.ncd.props<-return.prop.sex.age(vFreq = current.ncd.states)
   
   diff.props =  target.ncd.props-current.ncd.props
@@ -299,7 +320,7 @@ update.ncd.states<-function(pop){
   invisible(lapply(1:DIM.AGE, function(ag){
     lapply(1:DIM.SEX, function(sex){
       lapply(1:DIM.HIV, function(hiv){
-        lapply(1:DIM.NCD, function(ncd){
+        lapply(1:dim.ncd.states, function(ncd){
           trans.freq[ag,sex,hiv,ncd]<<-diff.props[ag,sex,hiv,ncd]*sum(current.ncd.states[ag,sex,hiv,]) # the required number of new transitions
         })})})}))
   trans.freq[trans.freq<0]<-0
@@ -321,6 +342,12 @@ update.ncd.states<-function(pop){
   current.ncd.states = filter.5D.stats.by.field(pop$return.state.size.distribution(),
                                                 years = as.character(pop$params$CYNOW),
                                                 keep.dimensions = c('age','sex','hiv.status','ncd.status','year'))[,,,,1]#to remove year dimension
+  #merging NCD trt into untreated states for the purpose of modeling new events
+  current.ncd.states[,,,"NCD.DIAB"]<-current.ncd.states[,,,"NCD.DIAB"]+current.ncd.states[,,,"NCD.DIAB.TRT"]
+  current.ncd.states[,,,"NCD.HYP"]<-current.ncd.states[,,,"NCD.HYP"]+current.ncd.states[,,,"NCD.HYP.TRT"]
+  current.ncd.states[,,,"NCD.DIAB_HYP"]<-current.ncd.states[,,,"NCD.DIAB_HYP"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT"]
+  current.ncd.states<-current.ncd.states[,,,c(1:4)]
+  
   current.ncd.props<-return.prop.sex.age(vFreq = current.ncd.states)
   
   diff.props =  target.ncd.props-current.ncd.props
@@ -330,7 +357,7 @@ update.ncd.states<-function(pop){
   invisible(lapply(1:DIM.AGE, function(ag){
     lapply(1:DIM.SEX, function(sex){
       lapply(1:DIM.HIV, function(hiv){
-        lapply(1:DIM.NCD, function(ncd){
+        lapply(1:dim.ncd.states, function(ncd){
           trans.freq[ag,sex,hiv,ncd]<<-diff.props[ag,sex,hiv,ncd]*sum(current.ncd.states[ag,sex,hiv,]) # the required number of new transitions
         })})})}))
   trans.freq[trans.freq<0]<-0
