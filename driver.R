@@ -90,7 +90,7 @@ if (1==2){
 # # SINGLE RUN ON ROCKFISH
 if (1==1) {
   print("running models parallel ....")
-  R=30 #reps
+  R=100 #reps
   S=5 #scenarios
   
   args = commandArgs(trailingOnly=TRUE)
