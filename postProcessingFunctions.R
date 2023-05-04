@@ -1,17 +1,25 @@
-SCENARIOS = c(1:5)
-REPLICATIONS = c(1:30)
-
-par(mfrow=c(1,1))
-
-
 # Functions: 
-# read.ncd.simset()
-# read.khm.simset()
-# read.khm.simset.full()
-# generate.annual.results(simset,data.type,reps,summary.statistic="mean")
-# generate.cumulative.results(simset,data.type,reps,summary.statistic="mean")
-# plot.cumulative.outcome(simset.1,simset.2,data.type,dimension)
+# 1. read.ncd.simset()
+# 2. read.khm.simset()
+# 3. read.khm.simset.full()
 
+# 4. generate.annual.results(simset,data.type,n.reps,summary.statistic="median")
+# 5. generate.cumulative.results(simset,data.type,n.reps,summary.statistic="median")
+# 6. plot.cumulative.outcome(simset.1,simset.2,data.type,dimension)
+
+# 7. plot.cumulative.outcome.boxplot(..., # pass multiple simsets
+#                                    data.types, # CAN PASS MULTIPLE DATA TYPES 
+#                                    dimension,
+#                                    facet.by=NULL,
+#                                    n.reps=30)
+
+# 8. generate.events.results.array(simset.list, # e.g., ncd.simset (which is a list of simsets, as read in using read.ncd.simset())
+#                                  n.reps,
+#                                  ages = DIM.NAMES.AGE,
+#                                  sexes = DIM.NAMES.SEX,
+#                                  hiv.status = DIM.NAMES.HIV,
+#                                  ncd.status = DIM.NAMES.NCD,
+#                                  outcomes = c("n.mi.inc","n.stroke.inc", "n.deaths.hiv", "n.deaths.cvd","n.deaths.non.hiv"))
 
 
 # NCD SIMSET: List of length (5), where each element is a scenario; 
@@ -93,17 +101,17 @@ read.khm.simset.full = function(){
 
 generate.annual.results = function(simset,
                                    data.type,
-                                   reps,
-                                   summary.statistic="mean"){
+                                   n.reps,
+                                   summary.statistic="median"){
   
-  simset = simset[1:reps]
+  simset = simset[1:n.reps]
   
   dim.names = list(age=DIM.NAMES.AGE,
                    sex=DIM.NAMES.SEX,
                    hiv.status=DIM.NAMES.HIV,
                    ncd.status=DIM.NAMES.NCD,
                    years=as.character(c(2014:2031)),
-                   rep=c(1:reps))
+                   rep=c(1:n.reps))
   
   data = sapply(simset, function(rep){
     rep$stats[[data.type]]
@@ -117,21 +125,18 @@ generate.annual.results = function(simset,
   summary.result
 }
 
-
-
-
 generate.cumulative.results = function(simset,
                                        data.type,
-                                       reps,
-                                       summary.statistic="mean"){
+                                       n.reps,
+                                       summary.statistic="median"){
   
-  simset = simset[1:reps]
+  simset = simset[1:n.reps]
   
   dim.names = list(age=DIM.NAMES.AGE,
                    sex=DIM.NAMES.SEX,
                    hiv.status=DIM.NAMES.HIV,
                    ncd.status=DIM.NAMES.NCD,
-                   rep=c(1:reps))
+                   rep=c(1:n.reps))
   
   cumulative.data = sapply(simset, function(rep){
     x = apply(rep$stats[[data.type]], c(1:4), sum) # sum over years 
@@ -140,7 +145,10 @@ generate.cumulative.results = function(simset,
   dim(cumulative.data) = sapply(dim.names,length)
   dimnames(cumulative.data) = dim.names
   
-  summary.result = apply(cumulative.data,c("age","sex","hiv.status","ncd.status"), summary.statistic)
+  if(summary.statistic=="median and CI"){
+    summary.result = apply(cumulative.data,c("age","sex","hiv.status","ncd.status"), quantile,c(.025,.5,.975))
+  } else 
+    summary.result = apply(cumulative.data,c("age","sex","hiv.status","ncd.status"), summary.statistic)
   
   summary.result
   
@@ -151,8 +159,8 @@ plot.cumulative.outcome = function(simset.1,
                                    data.type,
                                    dimension){
   
-  cumulative.outcome.1 = generate.cumulative.results(simset = simset.1, data.type = data.type, reps=30)
-  cumulative.outcome.2 = generate.cumulative.results(simset = simset.2, data.type = data.type, reps=30)
+  cumulative.outcome.1 = generate.cumulative.results(simset = simset.1, data.type = data.type, n.reps=30)
+  cumulative.outcome.2 = generate.cumulative.results(simset = simset.2, data.type = data.type, n.reps=30)
   
   cumulative.outcome.by.dimension.1 = apply(cumulative.outcome.1,dimension,sum)
   cumulative.outcome.by.dimension.2 = apply(cumulative.outcome.2,dimension,sum)
@@ -177,3 +185,111 @@ plot.cumulative.outcome = function(simset.1,
   print(plot)
   
 }
+
+
+plot.cumulative.outcome.boxplot = function(...,
+                                           data.types,
+                                           dimension,
+                                           facet.by=NULL,
+                                           n.reps=30){
+  simsets = list(...)
+  
+  dim.names = list(age=DIM.NAMES.AGE,
+                   sex=DIM.NAMES.SEX,
+                   hiv.status=DIM.NAMES.HIV,
+                   ncd.status=DIM.NAMES.NCD,
+                   rep=c(1:n.reps))
+  
+  df.sim = NULL
+  
+  for(i in 1:length(simsets)){
+    simset = simsets[[i]]
+    
+    scenario.number = as.numeric(simset[[1]]$params$khm$intervention.id)
+    
+    for(d in data.types){
+
+    
+    data = sapply(simset, function(rep){x = apply(rep$stats[[d]], c(1:4), sum)})
+    dim(data) = sapply(dim.names,length)
+    dimnames(data) = dim.names
+    
+    if(dimension=="total"){
+      data.by.dim = apply(data,c("rep"),sum)
+      dim.names.new = list(dim="total",
+                           rep=dim.names[["rep"]])
+      
+    } else{
+      data.by.dim = apply(data,c(dimension,"rep"),sum)
+      dim.names.new = list(dim=dim.names[[dimension]],
+                           rep=dim.names[["rep"]])
+    }
+    
+    dim(data.by.dim)=sapply(dim.names.new,length)
+    dimnames(data.by.dim) = dim.names.new
+    
+    one.df = reshape2::melt(data.by.dim) 
+    one.df$scenario.id = scenario.number
+    one.df$data.type = d
+    df.sim = rbind(df.sim, one.df)   
+    
+    }
+    
+  }
+  
+  df.sim$scenario.id = as.character(df.sim$scenario.id)
+  
+  
+  facet_string = '~data.type'
+  if(length(facet.by)>0){
+    facet_string = paste0("~",paste0(facet.by,collapse = '+'))
+  }
+  facet_formula = as.formula(facet_string)
+  
+  plot = ggplot(df.sim, aes(x=dim, y=value, fill=scenario.id)) + 
+    geom_boxplot()+ 
+    facet_wrap(facet_formula, scales = "free_y") + 
+    ylim(0,NA)
+
+  print(plot)
+  
+}
+
+
+generate.events.results.array = function(simset.list,
+                                         n.reps,
+                                         ages = DIM.NAMES.AGE,
+                                         sexes = DIM.NAMES.SEX,
+                                         hiv.status = DIM.NAMES.HIV,
+                                         ncd.status = DIM.NAMES.NCD,
+                                         outcomes = c("n.mi.inc","n.stroke.inc", "n.deaths.hiv", "n.deaths.cvd","n.deaths.non.hiv")
+){
+  reps = c(1:n.reps)
+  simset.list = simset.list
+  interventions = c(1:length(simset.list))
+  
+  full.dim.names = list(age = ages,
+                        sex = sexes,
+                        hiv.status = hiv.status,
+                        ncd.status = ncd.status,
+                        outcome = outcomes,
+                        rep = reps,
+                        intervention = interventions)
+  
+  rv = sapply(simset.list, function(simset){
+    sapply(reps, function(rep){
+      sapply(outcomes, function(x){
+        
+        apply(simset[[rep]]$stats[[x]], c(1:4), sum)
+        
+      })
+    })
+  })
+  
+  dim(rv) = sapply(full.dim.names, length)
+  dimnames(rv) = full.dim.names
+  
+  rv
+}
+
+
