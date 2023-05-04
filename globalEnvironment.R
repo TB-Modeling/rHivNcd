@@ -163,6 +163,11 @@ generate.new.modelParameter<-function(scenario){
   for(i in 4:6) x[c(DIM.NAMES.AGE[i]),,,]=x["40-44",,,]*MP$cvd.risk.multiplier.15.to.29 # 15-19, 20-24, 25-29
   for(i in 7:8) x[c(DIM.NAMES.AGE[i]),,,]=x["40-44",,,]*MP$cvd.risk.multiplier.30.to.39 # 30-34, 35-39
   for(i in 16:17) x[c(DIM.NAMES.AGE[i]),,,]=x["70-74",,,]
+  
+  #applying a single multiplier for sensitivity analysis
+  MP$cvd.risk.multiplier=1
+  x=x* MP$cvd.risk.multiplier
+  
   # annual risk computed from an exponential decay
   annual.cvd.risk.by.age.sex=-((log(1- x/100 ))/10) # not included in MP since we only need monthly values 
   #assuming geometric distribution of risk over time
@@ -180,6 +185,12 @@ generate.new.modelParameter<-function(scenario){
   load("data/monthly.mi.mortality.Rdata")
   MP$first.stroke.monthly.mortality = stroke.monthly.mortality #first time stroke mortality
   MP$first.mi.monthly.mortality = mi.monthly.mortality
+  
+  #applying a single multiplier for sensitivity analysis
+  MP$cvd.mortality.multiplier=1
+  stroke.monthly.mortality=stroke.monthly.mortality*MP$cvd.mortality.multiplier
+  mi.monthly.mortality=mi.monthly.mortality*MP$cvd.mortality.multiplier
+  
   #recurrent events
   recur.stroke.mort.OR.multiplier=2.53 # this is an ODDS RATIO (relative to current probability), so have to convert to odds and then back to probability (in returnCvdMortality function)
   #adjusted OR:
