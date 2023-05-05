@@ -96,7 +96,7 @@ if (1==1) {
   # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
   set.seed(rep)
   scenario=scenarios[[scenarioId]]$id
-  print(paste("node=",x,"repl= ",rep," scenario=", scenario, "starting..."))
+  print(paste("node=",x,"rep= ",rep," scenario=", scenario, "starting..."))
   start_time <- Sys.time()
   pop<-initialize.simulation(id = rep,
                              n = POP.SIZE,
@@ -115,10 +115,11 @@ if (1==1) {
   #saving population
   res=list(stats=pop$stats,
            params=pop$params)
-  saveRDS(res,file = paste0("outputs/popList-s",scenario,"-rep",rep),compress = T)
+  saveRDS(res,file = paste0("outputs/pop-ncdScenario",scenario,"-rep",rep),compress = T)
+  
   # saving time
   end_time <- Sys.time()
-  session_time=end_time - start_time
-  txt=paste("Model ",rep," >> session time ",session_time)
+  session_time=hms_span(start_time,end_time)
+  txt=paste("rep= ",rep," scenario=", scenario," >> session time ",session_time)
   write.table(x = txt,file = "outputs/out-sessionTime.txt",col.names = F,row.names = F,append = T)
 }

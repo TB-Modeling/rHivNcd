@@ -39,9 +39,9 @@ ncdScenarios=list(
 # LIST OF SENSITIVITY ANALYSIS SCENARIOS
 # EACH LINE REPRESENTS A NEW ONE-WAY VARIATION IN A PARAMETER VALUE
 saScenarios=list(
-  list(saId=1, param="relative.ncd.risk.by.hiv", newVal=2),
-  list(saId=2, param="annual.growth.ncd.prev",  newVal=2),
-  list(saId=3, param="cvd.risk.multiplier.hiv",  newVal=2)
+  list(id=1, param="relative.ncd.risk.by.hiv", newVal=2), #baseline=1
+  list(id=2, param="annual.growth.ncd.prev",  newVal=1.05),#baseline=1
+  list(id=3, param="cvd.risk.multiplier.hiv",  newVal=2)#baseline=1.5
   # ....
 )
 #######################################################
@@ -60,52 +60,60 @@ print("Sourcing dependencies")
 #######################################################
 
 if (1==1) {
-  print("running SA models in parallel ....")
-  R=10 #reps
-  S=length(saScenarios)
-  
-  ncdScenarioId=5 #specific NCD scenario to run
-  
   args = commandArgs(trailingOnly=TRUE)
   x=as.numeric(args[1])
-  rep=floor((x-1)/(S))+1
-  saId= (x-1)%%S+1
   
-  # for (x in c(1:30)){
-  #   rep=floor((x-1)/(S))+1
-  #   scenarioId= (x-1)%%S+1
-  #   print(paste("x=",x,"rep=",rep,"scenario=",scenarioId))
+  vReps=c(1:2) #vector of reps 
+  vSaScenarios=c(1:length(saScenarios)) #vector of sa scenario ids
+  #'@MS: should we run each sa scenario for both ncd scenarios 1 (no int) and 3 & 5 (intervention)?
+  vNcdScenarios=c(1,3,5) #specific NCD scenarios to run
+  
+  
+  nSaScenaios=length(vSaScenarios)
+  nNcdScenarios=length(vNcdScenarios)
+  rep=floor((x-1)/(nSaScenaios+nNcdScenarios))+1
+  ncdId= floor((x-1)/nSaScenaios)%%nNcdScenarios+1
+  saId= (x-1)%%(nSaScenaios)+1
+  
+  print(paste("running SA models in parallel with",length(vReps),"reps,",nSaScenaios," saScenarios,",nNcdScenarios,"ncdScenarios"))
+  #  for (x in c(1:60)){
+  #   rep=floor((x-1)/(nSaScenaios+nNcdScenarios))+1
+  #   ncdId= floor((x-1)/nSaScenaios)%%nNcdScenarios+1
+  #   saId= (x-1)%%(nSaScenaios)+1
+  #   print(paste("x=",x,"rep=",rep,"ncd=",ncdId,"sa=",saId))
   # }
   
  # run a single SA scenario
   set.seed(rep)
-  sa=saScenarios[[saId]]
-  print(paste("node=",x,"running rep= ",rep," for SA-scenario=", sa$saId, " and ncd-scenario=",ncdScenarioId,"starting..."))
+  
+  print(paste("node=",x,"running rep= ",rep," for SA-scenario=", saScenarios[[saId]]$id, " and ncd-scenario=",ncdScenarios[[ncdId]]$id,"starting..."))
   start_time <- Sys.time()
   ##
   pop<-initialize.simulation(id = rep,
                            n = POP.SIZE,
-                           scenario=ncdScenarios[[ncdScenarioId]]$id)
+                           scenario=ncdScenarios[[ncdId]]$id)
   #change param value
-  pop$params[sa$param]=sa$newVal
+  print(paste("changing param: ",saScenarios[[saId]]$param," to new value"))
+  pop$params[saScenarios[[saId]]$param]=saScenarios[[saId]]$newVal
+  
   #run the model with new value
-  while(pop$params$CYNOW<= 2030)
-    run.one.year.int(pop,
-                     scenario =ncdScenarios[[ncdScenarioId]]$id,
-                     int.start.year = 2023,
-                     int.end.year = 2030,
-                     pCoverage = ncdScenarios[[ncdScenarioId]]$pCoverage,
-                     pNcdTrtInitiation = ncdScenarios[[ncdScenarioId]]$pNcdTrtInitiation,
-                     pDropOut=ncdScenarios[[ncdScenarioId]]$pDropOut
-    )
+  # while(pop$params$CYNOW<= 2030)
+  #   run.one.year.int(pop,
+  #                    scenario =ncdScenarios[[ncdId]]$id,
+  #                    int.start.year = 2023,
+  #                    int.end.year = 2030,
+  #                    pCoverage = ncdScenarios[[ncdId]]$pCoverage,
+  #                    pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
+  #                    pDropOut=ncdScenarios[[ncdId]]$pDropOut
+  #   )
   
   #saving population
   res=list(stats=pop$stats,
            params=pop$params)
-  saveRDS(res,file = paste0("outputs/popList-sa",sa$saId,"-ncdScenario",ncdScenarios[[ncdScenarioId]]$id,"-rep",rep),compress = T)
+  saveRDS(res,file = paste0("outputs/pop-saScenario",saScenarios[[saId]]$saId,"-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
   # saving time
   end_time <- Sys.time()
-  session_time=end_time - start_time
-  txt=paste("Model ",rep," >> session time ",session_time)
+  session_time=hms_span(start_time,end_time)
+  txt=paste("rep= ",rep," for SA-scenario=", saScenarios[[saId]]$id, " and ncd-scenario=",ncdScenarios[[ncdId]]$id,">>> session time ",session_time)
   write.table(x = txt,file = "outputs/out-sessionTime.txt",col.names = F,row.names = F,append = T)
 }
