@@ -41,7 +41,8 @@ if (1==1) {
   vSaScenarios=c(1:length(saScenarios)) #vector of sa scenario ids
   #'@MS: should we run each sa scenario for both ncd scenarios 1 (no int) and 3 & 5 (intervention)?
   vNcdScenarios=c(1,3,5) #specific NCD scenarios to run
-  
+  # filter ncd scenarios to only keep the ones that we need
+  ncdScenarios=ncdScenarios[vNcdScenarios]
   
   nSaScenaios=length(vSaScenarios)
   nNcdScenarios=length(vNcdScenarios)
