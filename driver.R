@@ -15,18 +15,7 @@ library(data.table)
 # library(Rcpp)
 # library(ggplot2)
 # library(data.table)
-#######################################################
-#function to return elapse run time for the simulation
-hms_span <- function(start, end) {
-  dsec <- as.numeric(difftime(end, start, unit = "secs"))
-  hours <- floor(dsec / 3600)
-  minutes <- floor((dsec - 3600 * hours) / 60)
-  seconds <- dsec - 3600*hours - 60*minutes
-  paste0(
-    sapply(c(hours, minutes, seconds), function(x) {
-      formatC(x, width = 2, format = "d", flag = "0")
-    }), collapse = ":")
-}
+
 #######################################################
 print("Sourcing dependencies")
 {
@@ -100,7 +89,7 @@ if (1==1) {
   
   # for (x in c(1:150)){
   #   rep=floor((x-1)/(S))+1
-  #   scenarioId= (x-1)%%5+1
+  #   scenarioId= (x-1)%%S+1
   #   print(paste("x=",x,"rep=",rep,"scenario=",scenarioId))
   # }
   
