@@ -7,11 +7,11 @@
 
 #SBATCH --partition=defq
 #SBATCH --job-name=hivncd-slurm
-#SBATCH --time=05:00:0
-#SBATCH --cpus-per-task=2
+#SBATCH --time=08:00:0
+#SBATCH --cpus-per-task=3
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=4GB
-#SBATCH --array=1-150
+#SBATCH --array=1-250
 #SBATCH --output=outputs/outSlurm_%a.out
 #SBATCH --error=outputs/outSlurm_%a.err
 #SBATCH --mail-type=end
