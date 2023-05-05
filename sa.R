@@ -74,23 +74,24 @@ if (1==1) {
  
   
   #run the model with new value
-  # while(pop$params$CYNOW<= 2030)
-  #   run.one.year.int(pop,
-  #                    scenario =ncdScenarios[[ncdId]]$id,
-  #                    int.start.year = 2023,
-  #                    int.end.year = 2030,
-  #                    pCoverage = ncdScenarios[[ncdId]]$pCoverage,
-  #                    pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
-  #                    pDropOut=ncdScenarios[[ncdId]]$pDropOut
-  #   )
+  while(pop$params$CYNOW<= 2030)
+      run.one.year.int(pop,
+                       ncdScenario  =ncdScenarios[[ncdId]]$id,
+                     int.start.year = 2023,
+                     int.end.year = 2030,
+                     pCoverage = ncdScenarios[[ncdId]]$pCoverage,
+                     pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
+                     pDropOut=ncdScenarios[[ncdId]]$pDropOut
+    )
   
   #saving population
   res=list(stats=pop$stats,
            params=pop$params)
-  saveRDS(res,file = paste0("outputs/pop-saScenario",saScenarios[[saId]]$saId,"-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+  saveRDS(res,file = paste0("outputs/pop-saScenario",saScenarios[[saId]]$id,"-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
   # saving time
   end_time <- Sys.time()
   session_time=hms_span(start_time,end_time)
   txt=paste("rep= ",rep," for SA-scenario=", saScenarios[[saId]]$id, " and ncd-scenario=",ncdScenarios[[ncdId]]$id,">>> session time ",session_time)
+  print(txt)
   write.table(x = txt,file = "outputs/out-sessionTime.txt",col.names = F,row.names = F,append = T)
 }
