@@ -17,7 +17,7 @@ AGE.INTERVAL=5
 MIN.AGE=0
 MAX.AGE=85*12
 
-POP.SIZE=100
+POP.SIZE=500000
 
 #
 FEMALE=1
@@ -112,13 +112,13 @@ generate.new.modelParameter<-function(ncdScenario=0,
   print(paste0("reading data/hiv_simset_scenario",MP$NCD.SCENARIO,".RData ..."))
   load(paste0("data/hiv_simset_scenario",MP$NCD.SCENARIO,".RData")) # extended name for different datasets from KHM
   
-  MP$khm.full=khm.full # leaving full simset in here for plotting purposes
-  class(MP$khm.full) = "khm_simulation_output"
+  # MP$khm.full=khm.full # leaving full simset in here for plotting purposes
+  # class(MP$khm.full) = "khm_simulation_output"
   #sample one random khm model:
   x=sample(1:length(MP$khm.full),1)
   print(paste("KHM model ",x," was sampled"))
   MP$khm.id=x #khm id that was sampled for this run
-  khm = MP$khm.full[[x]]# randomly sample one hiv sim from the length of n.hiv.sims
+  khm = khm.full[[x]]# randomly sample one hiv sim from the length of n.hiv.sims
   khm.hivPrev2015 = khm$population["2015",,,]
   MP$khm=khm
   MP$khm.hivPrev2015=khm.hivPrev2015
