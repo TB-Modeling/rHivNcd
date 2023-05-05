@@ -143,6 +143,8 @@ simplot = function(..., # can pass any combination of single simulations or full
   
   if(scale.population & view.as.rate)
     stop("can't choose both scale.population (scaled to scale.to.year value) and view.as.rate (per X pop) - must select one")
+  if(combine.comorbidity & !(data.type %in% c("hyp.prev","diab.prev")))
+    stop("can only view combined comorbidity for one disease at a time")
   
   df.sim = NULL
   
@@ -165,7 +167,8 @@ simplot = function(..., # can pass any combination of single simulations or full
         if(is.null(ncd.data.type.x))
           stop("Haven't set up to pull this data type from ncd model")
         
-        if(data.type %in% c("population","hiv.incidence","mi.inc","stroke.inc",
+        # PULL DIRECT DATA TYPE
+        if(data.type %in% c("hiv.incidence","mi.inc","stroke.inc",
                             "hyp.inc","diab.inc","diab.hyp.inc",
                             "hiv.mortality","non.hiv.mortality","cvd.mortality")){
           value = filter.5D.stats.by.field(sim[[j]]$stats[[ncd.data.type.x]], 
@@ -175,56 +178,80 @@ simplot = function(..., # can pass any combination of single simulations or full
                                            hiv.status = hiv.status,
                                            ncd.status = ncd.status,
                                            keep.dimensions = keep.dimensions)
-        } else if(data.type=="hiv.prevalence"){
-          hiv.status = DIM.NAMES.HIV[-1]
-          # note that this overrides any hiv.status specified in the arguments
-          value = filter.5D.stats.by.field(sim[[j]]$stats$n.state.sizes, 
-                                           years = years,
-                                           ages = ages, 
-                                           sexes = sexes,
-                                           hiv.status = DIM.NAMES.HIV[-1], # extract population, remove HIV negative
-                                           # note that this overrides any hiv.status specified in the arguments
-                                           ncd.status = ncd.status,
-                                           keep.dimensions = keep.dimensions)
-        } else if(data.type %in% c("hyp.prev","diab.prev","diab.hyp.prev")){
-          
-          if(combine.comorbidity) {
-            
-            if(show.treated){
-              ncd.status = c("NCD.HYP","NCD.DIAB_HYP","NCD.DIAB.TRT","NCD.HYP.TRT","NCD.DIAB_HYP.TRT")
-            } else
-              ncd.status = c("NCD.HYP","NCD.DIAB_HYP")
-            
-          } else {
-            if (data.type=="hyp.prev"){
-              if(show.treated){
-                ncd.status = c("NCD.HYP","NCD.HYP.TRT")
-              } else
-                ncd.status = "NCD.HYP"
-            } else if(data.type=="diab.prev"){
-              if(show.treated){
-                ncd.status = c("NCD.DIAB","NCD.DIAB.TRT")
-              } else
-                ncd.status = "NCD.DIAB"
-            } else if(data.type=="diab.hyp.prev"){
-              if(show.treated){
-                ncd.status = c("NCD.DIAB_HYP","NCD.DIAB_HYP.TRT")
-              } else
-                ncd.status = "NCD.DIAB_HYP"
-            }
-          }
       
-          # note that this overrides any ncd.status specified in the arguments
+          # PULL STATE SIZES, WITH SOME MANIPULATIONS (E.G., ONLY HIV+, ONLY HYP+, ETC.)
+        } 
+        
+        if(data.type %in% c("population","hiv.prevalence","hyp.prev","diab.prev","diab.hyp.prev")){
+          
+          if(data.type=="population")
+            ncd.status=ncd.status 
+          if(data.type=="hiv.prevalence")
+            hiv.status = DIM.NAMES.HIV[-1]
+            
+            # HYPERTENSION PREVALENCE 
+            if(data.type=="hyp.prev"){
+              ncd.status="NCD.HYP" # NO COMBINED COMORBIDITY, ONLY HYP
+              
+            if(combine.comorbidity){ # COMBINED COMORBIDITY: HYP AND DIAB_HYP
+              ncd.status=c("NCD.HYP","NCD.DIAB_HYP") # NO TRT: ONLY HYP AND DIAB_HYP
+              
+              if(show.treated) # TREATMENT: HYP; HYP.TRT; DIAB_HYP; DIAB_HYP.TRT
+                ncd.status=c("NCD.HYP","NCD.HYP.TRT","NCD.DIAB_HYP","NCD.DIAB_HYP.TRT")
+
+            } 
+
+            # DIABETES PREVALENCE
+          } 
+          
+          if(data.type=="diab.prev"){
+            ncd.status="NCD.DIAB"
+            
+            if(combine.comorbidity){
+              ncd.status=c("NCD.DIAB","NCD.DIAB_HYP")
+              
+              if(show.treated)
+                ncd.status=c("NCD.DIAB","NCD.DIAB.TRT","NCD.DIAB_HYP","NCD.DIAB_HYP.TRT")
+
+            } 
+
+            # COMBINED PREVALENCE 
+          } 
+          
+          if(data.type=="diab.hyp.prev"){
+            ncd.status="NCD.DIAB_HYP"
+            
+            if(show.treated)
+              ncd.status=c("NCD.DIAB_HYP","NCD.DIAB_HYP.TRT")
+          }
+            
+          # note that ncd.status or hiv.status may have been overwritten from whatever was specified in the arguments
           value = filter.5D.stats.by.field(sim[[j]]$stats$n.state.sizes, 
                                            years = years,
                                            ages = ages, 
                                            sexes = sexes,
                                            hiv.status = hiv.status,
                                            ncd.status = ncd.status,
-                                           # note that this overrides any ncd.status specified in the arguments
                                            keep.dimensions = keep.dimensions)
-        } else  
-          stop("Haven't set up to pull this data type from ncd model")
+            
+          
+          stop("Melissa add in manipulations to value here - to combine comorbidities, etc.")
+          
+        }
+        
+        if(view.as.rate){
+          denominator = filter.5D.stats.by.field(sim[[j]]$stats$n.state.sizes, 
+                                                years = years,
+                                                ages = ages, 
+                                                sexes = sexes,
+                                                hiv.status = DIM.NAMES.HIV,
+                                                ncd.status = DIM.NAMES.NCD,
+                                                keep.dimensions = keep.dimensions)
+          
+          value = value/denominator
+          value = value*per.X.population # set in arguments (right now set to 10,000)
+          
+        }
         
         # For scale.population, divide by 2015 population size - have to do this separately for each combo of keep.dimensions
         # RIGHT NOW, IF 2015 VALUE IS 0, MANUALLY SETTING TO 1# 
@@ -283,19 +310,7 @@ simplot = function(..., # can pass any combination of single simulations or full
           }
         }
         
-        if(view.as.rate){
-          population = filter.5D.stats.by.field(sim[[j]]$stats$n.state.sizes, 
-                                                years = years,
-                                                ages = ages, 
-                                                sexes = sexes,
-                                                hiv.status = hiv.status,
-                                                ncd.status = DIM.NAMES.NCD,
-                                                keep.dimensions = keep.dimensions)
-          
-          value = value/population
-          value = value*per.X.population # set in arguments (right now set to 10,000)
-          
-        }
+
         
         # set up a dataframe with columns: year, value, sim id, data.type 
         one.df = reshape2::melt(value) 

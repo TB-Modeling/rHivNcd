@@ -30,14 +30,15 @@ read.ncd.simset = function(){
     temp.simset.ncd = vector("list",length(REPLICATIONS))
     
     invisible(lapply(REPLICATIONS,function(rep){
-      pop<-readRDS(paste0("outputs/popList-s",scenario,"-rep",rep))
-      print(paste0("reading outputs/popList-s",scenario,"-rep",rep, " for the ncd model"))
+      pop<-readRDS(paste0(OUTPUTS.DIR,"popList-s",scenario,"-rep",rep))
+      print(paste0("reading ",OUTPUTS.DIR,"popList-s",scenario,"-rep",rep, " for the ncd model"))
       temp.simset.ncd[[rep]] <<- pop
       
       return(temp.simset.ncd)
     }))
 
     ncd.simset[[scenario]]<<-temp.simset.ncd # if still using scenario 0; make this scenario + 1
+    rm(temp.simset.ncd)
     return(ncd.simset)
   }))
   
@@ -52,14 +53,15 @@ read.khm.simset = function(){
     temp.simset.khm = vector("list",length(REPLICATIONS))
     
     invisible(lapply(REPLICATIONS,function(rep){
-      pop<-readRDS(paste0("outputs/popList-s",scenario,"-rep",rep))
-      # print(paste0("reading outputs/popList-s",scenario,"-rep",rep, " for the hiv model"))
+      pop<-readRDS(paste0(OUTPUTS.DIR,"popList-s",scenario,"-rep",rep))
+      print(paste0("reading ",OUTPUTS.DIR,"popList-s",scenario,"-rep",rep, " for the hiv model"))
       temp.simset.khm[[rep]] <<- pop$params$khm
       
       return(temp.simset.khm)
     }))
     
     khm.simset[[scenario]]<<-temp.simset.khm # if still using scenario 0; make this scenario + 1
+    rm(temp.simset.khm)
     return(khm.simset)
   }))
   
@@ -79,14 +81,15 @@ read.khm.simset.full = function(){
     temp.simset.khm.full = vector("list",length(REPLICATIONS))
     
     invisible(lapply(REPLICATIONS,function(rep){
-      pop<-readRDS(paste0("outputs/popList-s",scenario,"-rep",rep))
-      # print(paste0("reading outputs/popList-s",scenario,"-rep",rep, " for the hiv model"))
+      pop<-readRDS(paste0(OUTPUTS.DIR,"popList-s",scenario,"-rep",rep))
+      print(paste0("reading ",OUTPUTS.DIR,"popList-s",scenario,"-rep",rep, " for the hiv model (full)"))
       temp.simset.khm.full[[rep]] <<- pop$params$khm.full
       
       return(temp.simset.khm.full)
     }))
     
     khm.simset.full[[scenario]]<<-temp.simset.khm.full # if still using scenario 0; make this scenario + 1
+    rm(temp.simset.khm.full)
     return(khm.simset.full)
   }))
   
@@ -262,7 +265,9 @@ generate.events.results.array = function(simset.list,
                                          sexes = DIM.NAMES.SEX,
                                          hiv.status = DIM.NAMES.HIV,
                                          ncd.status = DIM.NAMES.NCD,
-                                         outcomes = c("n.mi.inc","n.stroke.inc", "n.deaths.hiv", "n.deaths.cvd","n.deaths.non.hiv")
+                                         outcomes = c("n.hiv.eng","n.hyp.trt","n.diab.trt","n.diab.hyp.trt",
+                                                      "n.hiv.inc","n.mi.inc","n.stroke.inc",
+                                                      "n.deaths.hiv", "n.deaths.cvd","n.deaths.non.hiv")
 ){
   reps = c(1:n.reps)
   simset.list = simset.list

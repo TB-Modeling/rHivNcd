@@ -6,8 +6,10 @@ source("postProcessingFunctions.R") # moved all functions to this file so I can 
 
 SCENARIOS = c(1:5)
 REPLICATIONS = c(1:30)
+OUTPUTS.DIR = "outputs/05-03/"
 
 ncd.simset=read.ncd.simset()
+#save(ncd.simset, file = paste0("outputs/ncd.simset_",Sys.Date(),"_small.Rdata"))
 khm.simset=read.khm.simset()
 khm.simset.full = read.khm.simset.full()
 
@@ -19,6 +21,7 @@ intervention.names = c("1-baseline",
 names(ncd.simset) = intervention.names
 
 results.array = generate.events.results.array(ncd.simset,n.reps=30)
+save(results.array, file = paste0("outputs/ncd.results.array_",Sys.Date(),".Rdata"))
 
 # example of how to use results.array
 {
