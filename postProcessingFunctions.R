@@ -30,6 +30,7 @@ read.ncd.simset = function(){
     temp.simset.ncd = vector("list",length(REPLICATIONS))
     
     invisible(lapply(REPLICATIONS,function(rep){
+      # change this to read in only the stats list
       pop<-readRDS(paste0(OUTPUTS.DIR,"popList-s",scenario,"-rep",rep))
       print(paste0("reading ",OUTPUTS.DIR,"popList-s",scenario,"-rep",rep, " for the ncd model"))
       temp.simset.ncd[[rep]] <<- pop
@@ -209,34 +210,66 @@ plot.cumulative.outcome.boxplot = function(...,
     simset = simsets[[i]]
     
     scenario.number = as.numeric(simset[[1]]$params$khm$intervention.id)
-    
-    for(d in data.types){
 
-    
-    data = sapply(simset, function(rep){x = apply(rep$stats[[d]], c(1:4), sum)})
-    dim(data) = sapply(dim.names,length)
-    dimnames(data) = dim.names
-    
-    if(dimension=="total"){
-      data.by.dim = apply(data,c("rep"),sum)
-      dim.names.new = list(dim="total",
-                           rep=dim.names[["rep"]])
+    if("n.cvd.events" %in% data.types){
       
-    } else{
-      data.by.dim = apply(data,c(dimension,"rep"),sum)
-      dim.names.new = list(dim=dim.names[[dimension]],
-                           rep=dim.names[["rep"]])
+      data.1 = sapply(simset, function(rep){x = apply(rep$stats[["n.mi.inc"]], c(1:4), sum)})
+      data.2 = sapply(simset, function(rep){x = apply(rep$stats[["n.stroke.inc"]], c(1:4), sum)})
+      data = data.1+data.2
+      dim(data) = sapply(dim.names,length)
+      dimnames(data)=dim.names
+      
+      if(dimension=="total"){
+        data.by.dim = apply(data,c("rep"),sum)
+        dim.names.new = list(dim="total",
+                             rep=dim.names[["rep"]])
+        
+      } else{
+        data.by.dim = apply(data,c(dimension,"rep"),sum)
+        dim.names.new = list(dim=dim.names[[dimension]],
+                             rep=dim.names[["rep"]])
+      }
+      
+      dim(data.by.dim)=sapply(dim.names.new,length)
+      dimnames(data.by.dim) = dim.names.new
+      
+      one.df = reshape2::melt(data.by.dim) 
+      one.df$scenario.id = scenario.number
+      one.df$data.type = "n.cvd.events"
+      df.sim = rbind(df.sim, one.df)  
+      
+    } else {
+      for(d in data.types){
+        
+        data = sapply(simset, function(rep){x = apply(rep$stats[[d]], c(1:4), sum)})
+        dim(data) = sapply(dim.names,length)
+        dimnames(data) = dim.names
+        
+        if(dimension=="total"){
+          data.by.dim = apply(data,c("rep"),sum)
+          dim.names.new = list(dim="total",
+                               rep=dim.names[["rep"]])
+          
+        } else{
+          data.by.dim = apply(data,c(dimension,"rep"),sum)
+          dim.names.new = list(dim=dim.names[[dimension]],
+                               rep=dim.names[["rep"]])
+        }
+        
+        dim(data.by.dim)=sapply(dim.names.new,length)
+        dimnames(data.by.dim) = dim.names.new
+        
+        one.df = reshape2::melt(data.by.dim) 
+        one.df$scenario.id = scenario.number
+        one.df$data.type = d
+        df.sim = rbind(df.sim, one.df)   
+        
+      }
+      
     }
+      
+        
     
-    dim(data.by.dim)=sapply(dim.names.new,length)
-    dimnames(data.by.dim) = dim.names.new
-    
-    one.df = reshape2::melt(data.by.dim) 
-    one.df$scenario.id = scenario.number
-    one.df$data.type = d
-    df.sim = rbind(df.sim, one.df)   
-    
-    }
     
   }
   
@@ -286,6 +319,47 @@ generate.events.results.array = function(simset.list,
       sapply(outcomes, function(x){
         
         apply(simset[[rep]]$stats[[x]], c(1:4), sum)
+        
+      })
+    })
+  })
+  
+  dim(rv) = sapply(full.dim.names, length)
+  dimnames(rv) = full.dim.names
+  
+  rv
+}
+
+generate.events.results.array.annual = function(simset.list,
+                                                n.reps,
+                                                ages = DIM.NAMES.AGE,
+                                                sexes = DIM.NAMES.SEX,
+                                                hiv.status = DIM.NAMES.HIV,
+                                                ncd.status = DIM.NAMES.NCD,
+                                                years = DIM.NAMES.YEAR,
+                                                outcomes = c("n.state.sizes",
+                                                             "n.hiv.eng","n.hyp.trt","n.diab.trt","n.diab.hyp.trt",
+                                                             "n.hiv.inc","n.mi.inc","n.stroke.inc",
+                                                             "n.deaths.hiv", "n.deaths.cvd","n.deaths.non.hiv")
+){
+  reps = c(1:n.reps)
+  simset.list = simset.list
+  interventions = c(1:length(simset.list))
+  
+  full.dim.names = list(age = ages,
+                        sex = sexes,
+                        hiv.status = hiv.status,
+                        ncd.status = ncd.status,
+                        year = years,
+                        outcome = outcomes,
+                        rep = reps,
+                        intervention = interventions)
+  
+  rv = sapply(simset.list, function(simset){
+    sapply(reps, function(rep){
+      sapply(outcomes, function(x){
+        
+        simset[[rep]]$stats[[x]][ages,sexes,hiv.status,ncd.status,as.character(years)]
         
       })
     })

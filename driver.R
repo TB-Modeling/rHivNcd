@@ -77,8 +77,8 @@ if (1==2){
 # # #######################################################
 # # SINGLE RUN ON ROCKFISH
 if (1==1) {
-  vReps=1#:10 #reps
-  vNcdScenarios=1#:5 #scenarios
+  vReps=1:100 #reps
+  vNcdScenarios=1:5 #scenarios
   #############
   print("running models sequentially ....")
   nReps=length(vReps)
@@ -119,9 +119,11 @@ if (1==1) {
     )
   
   #saving population
-  res=list(stats=pop$stats,
-           params=pop$params)
-  saveRDS(res,file = paste0("outputs/pop-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+  # res=list(stats=pop$stats,
+  #          params=pop$params)
+  # saveRDS(res,file = paste0("outputs/pop-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+  saveRDS(pop$stats,file = paste0("outputs/pop-stats-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+  saveRDS(pop$params,file = paste0("outputs/pop-params-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
   
   # saving time
   end_time <- Sys.time()

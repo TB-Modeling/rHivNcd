@@ -4,14 +4,17 @@
 
 #We should also limit the wall time to what we might actually use, as I believe we get
 #billed as if we used the entire amount.  2 hours and 30 minutes to be on the safe side.
+# pop=100k >>> 2 CPUs; 5 hours
+# pop=500k >>> 4 CPUs; 8 hours
+# pop=1m >>> 5 CPUs; 10 hours
 
 #SBATCH --partition=defq
 #SBATCH --job-name=hivncd-slurm
 #SBATCH --time=08:00:0
-#SBATCH --cpus-per-task=3
+#SBATCH --cpus-per-task=4
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=4GB
-#SBATCH --array=1-250
+#SBATCH --array=1-500
 #SBATCH --output=outputs/outSlurm_%a.out
 #SBATCH --error=outputs/outSlurm_%a.err
 #SBATCH --mail-type=end

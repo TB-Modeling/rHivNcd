@@ -14,8 +14,9 @@ ncdScenarios=list(
 # EACH LINE REPRESENTS A NEW ONE-WAY VARIATION IN A PARAMETER VALUE
 saScenarios=list(
   list(id=1, param="relative.ncd.risk.by.hiv", newVal=2), #baseline=1
-  list(id=2, param="annual.growth.ncd.prev",  newVal=1.05),#baseline=1
-  list(id=3, param="cvd.risk.multiplier.hiv",  newVal=2)#baseline=1.5
+  list(id=2, param="annual.growth.ncd.prev",  newVal=1.03),#baseline=1
+  list(id=3, param="cvd.risk.multiplier.hiv",  newVal=1),#baseline=1.5
+  list(id=4, param="cvd.risk.multiplier.hiv",  newVal=2.02)#baseline=1.5
   # ....
 )
 #######################################################
@@ -40,7 +41,7 @@ if (1==1) {
   vReps=c(1:2) #vector of reps 
   vSaScenarios=c(1:length(saScenarios)) #vector of sa scenario ids
   #'@MS: should we run each sa scenario for both ncd scenarios 1 (no int) and 3 & 5 (intervention)?
-  vNcdScenarios=c(1,3,5) #specific NCD scenarios to run
+  vNcdScenarios=c(1,5) #specific NCD scenarios to run
   # filter ncd scenarios to only keep the ones that we need
   ncdScenarios=ncdScenarios[vNcdScenarios]
   
@@ -86,13 +87,14 @@ if (1==1) {
     )
   
   #saving population
-  res=list(stats=pop$stats,
-           params=pop$params)
-  saveRDS(res,file = paste0("outputs/pop-saScenario",saScenarios[[saId]]$id,"-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+  # res=list(stats=pop$stats,
+  #          params=pop$params)
+  saveRDS(pop$stats,file = paste0("outputs-sa/pop-stats-saScenario",saScenarios[[saId]]$id,"-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+  saveRDS(pop$params,file = paste0("outputs-sa/pop-params-saScenario",saScenarios[[saId]]$id,"-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
   # saving time
   end_time <- Sys.time()
   session_time=hms_span(start_time,end_time)
   txt=paste("rep= ",rep," for SA-scenario=", saScenarios[[saId]]$id, " and ncd-scenario=",ncdScenarios[[ncdId]]$id,">>> session time ",session_time)
   print(txt)
-  write.table(x = txt,file = "outputs/out-sessionTime.txt",col.names = F,row.names = F,append = T)
+  write.table(x = txt,file = "outputs-sa/out-sessionTime.txt",col.names = F,row.names = F,append = T)
 }

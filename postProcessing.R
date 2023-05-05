@@ -23,6 +23,10 @@ names(ncd.simset) = intervention.names
 results.array = generate.events.results.array(ncd.simset,n.reps=30)
 save(results.array, file = paste0("outputs/ncd.results.array_",Sys.Date(),".Rdata"))
 
+results.array.annual = generate.events.results.array.annual(ncd.simset,n.reps=30)
+save(results.array.annual, file = paste0("outputs/ncd.results.array.annual_",Sys.Date(),".Rdata"))
+
+
 # example of how to use results.array
 {
   cumulative.cvd.deaths.by.age = apply(results.array[,,,,"n.deaths.cvd",,],c("age","rep","intervention"),sum)
