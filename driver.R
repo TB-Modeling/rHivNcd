@@ -15,18 +15,7 @@ library(data.table)
 # library(Rcpp)
 # library(ggplot2)
 # library(data.table)
-#######################################################
-#function to return elapse run time for the simulation
-hms_span <- function(start, end) {
-  dsec <- as.numeric(difftime(end, start, unit = "secs"))
-  hours <- floor(dsec / 3600)
-  minutes <- floor((dsec - 3600 * hours) / 60)
-  seconds <- dsec - 3600*hours - 60*minutes
-  paste0(
-    sapply(c(hours, minutes, seconds), function(x) {
-      formatC(x, width = 2, format = "d", flag = "0")
-    }), collapse = ":")
-}
+
 #######################################################
 print("Sourcing dependencies")
 {
@@ -37,8 +26,9 @@ print("Sourcing dependencies")
   source("rCoreFunctions.R")
   # source("plots.R")
 }
-
-scenarios=list(
+#######################################################
+# LIST OF NCD SCENARIOS
+ncdScenarios=list(
   list(id=1,pCoverage=0.0,pNcdTrtInitiation=0.0,pDropOut=0.00),
   list(id=2,pCoverage=0.1,pNcdTrtInitiation=0.8,pDropOut=0.05),
   list(id=3,pCoverage=0.1,pNcdTrtInitiation=0.9,pDropOut=0.00),
@@ -48,40 +38,38 @@ scenarios=list(
 #######################################################
 # MULTI REPS
 if (1==2){
-  R=1 #reps
-  S=5 #scenarios
+  vReps=1:10 #reps
+  vNcdScenarios=1:5 #scenarios
   print("running models sequentially ....")
-  lapply(c(1:R),function(rep){
-    lapply(c(S),function(id){
-      start_time <- Sys.time()
+  nReps=length(vReps)
+  nNcdScenarios=length(vNcdScenarios)
+  
+  lapply(vReps,function(rep){
+    lapply(vNcdScenarios,function(ncdId){
       set.seed(rep)
-      scenario=scenarios[[id]]$id
-      print(paste("replication ",rep," scenario", scenario, "starting..."))
+      print(paste("replication ",rep," scenario", ncdScenarios[[ncdId]]$id, "starting..."))
       
       # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
       pop<-initialize.simulation(id = rep,
                                  n = POP.SIZE,
-                                 scenario=scenario)
+                                 ncdScenario = ncdScenarios[[ncdId]]$id,
+                                 saScenario = 0)
       #run sims
       while(pop$params$CYNOW<= 2030)
         run.one.year.int(pop,
-                         scenario =scenarios[[id]]$id,
+                         scenario =ncdScenarios[[ncdId]]$id,
                          int.start.year = 2023,
                          int.end.year = 2030,
-                         pCoverage = scenarios[[id]]$pCoverage,
-                         pNcdTrtInitiation = scenarios[[id]]$pNcdTrtInitiation,
-                         pDropOut=scenarios[[id]]$pDropOut
+                         pCoverage = ncdScenarios[[ncdId]]$pCoverage,
+                         pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
+                         pDropOut=ncdScenarios[[ncdId]]$pDropOut
         )
       
       #saving population
       res=list(stats=pop$stats,
                params=pop$params)
-      saveRDS(res,file = paste0("outputs/popList-s",scenario,"-rep",rep),compress = T)
-      # saving time
-      end_time <- Sys.time()
-      session_time=end_time - start_time
-      txt=paste("Model ",rep," >> session time ",session_time)
-      write.table(x = txt,file = "outputs/out-sessionTime.txt",col.names = F,row.names = F,append = T)
+      saveRDS(res,file = paste0("outputs/popList-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+       
     })
   })
 }
@@ -89,47 +77,56 @@ if (1==2){
 # # #######################################################
 # # SINGLE RUN ON ROCKFISH
 if (1==1) {
-  print("running models parallel ....")
-  R=100 #reps
-  S=5 #scenarios
+  vReps=1:10 #reps
+  vNcdScenarios=1:5 #scenarios
+  #############
+  print("running models sequentially ....")
+  nReps=length(vReps)
+  nNcdScenarios=length(vNcdScenarios)
+  
+  print(paste("running models parallel with ",nReps,"reps and",nNcdScenarios,"ncdScenarios"))
   
   args = commandArgs(trailingOnly=TRUE)
   x=as.numeric(args[1])
-  rep=floor((x-1)/(S))+1
-  scenarioId= (x-1)%%5+1
+  rep=floor((x-1)/(nNcdScenarios))+1
+  ncdId= (x-1)%%nNcdScenarios+1
   
   # for (x in c(1:150)){
-  #   rep=floor((x-1)/(S))+1
-  #   scenarioId= (x-1)%%5+1
+  #   rep=floor((x-1)/(nNcdScenarios))+1
+  #   scenarioId= (x-1)%%nNcdScenarios+1
   #   print(paste("x=",x,"rep=",rep,"scenario=",scenarioId))
   # }
   
   # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
   set.seed(rep)
-  scenario=scenarios[[scenarioId]]$id
-  print(paste("node=",x,"repl= ",rep," scenario=", scenario, "starting..."))
   start_time <- Sys.time()
+  print(paste("replication ",rep," scenario", ncdScenarios[[ncdId]]$id, "starting..."))
+  
+  # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
   pop<-initialize.simulation(id = rep,
                              n = POP.SIZE,
-                             scenario=scenario)
+                             ncdScenario = ncdScenarios[[ncdId]]$id,
+                             saScenario = 0)
   #run sims
   while(pop$params$CYNOW<= 2030)
     run.one.year.int(pop,
-                     scenario =scenario,
+                     ncdScenario = ncdScenarios[[ncdId]]$id,
                      int.start.year = 2023,
                      int.end.year = 2030,
-                     pCoverage = scenarios[[scenarioId]]$pCoverage,
-                     pNcdTrtInitiation = scenarios[[scenarioId]]$pNcdTrtInitiation,
-                     pDropOut=scenarios[[scenarioId]]$pDropOut
+                     pCoverage = ncdScenarios[[ncdId]]$pCoverage,
+                     pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
+                     pDropOut=ncdScenarios[[ncdId]]$pDropOut
     )
   
   #saving population
   res=list(stats=pop$stats,
            params=pop$params)
-  saveRDS(res,file = paste0("outputs/popList-s",scenario,"-rep",rep),compress = T)
+  saveRDS(res,file = paste0("outputs/pop-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+  
   # saving time
   end_time <- Sys.time()
-  session_time=end_time - start_time
-  txt=paste("Model ",rep," >> session time ",session_time)
+  session_time=hms_span(start_time,end_time)
+  txt=paste("rep= ",rep," ncdScenario=", ncdScenarios[[ncdId]]$id," >> session time ",session_time)
+  print(txt)
   write.table(x = txt,file = "outputs/out-sessionTime.txt",col.names = F,row.names = F,append = T)
 }

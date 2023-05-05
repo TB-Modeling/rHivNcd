@@ -10,12 +10,13 @@ print("Sourcing rCoreFunctions.R ... ")
 print("Loading function create.initial.pop.list")
 initialize.simulation <- function( id=0,
                                    n=0 ,
-                                   scenario=scenario# number of people if not specified as in mc
+                                   ncdScenario=0,
+                                   saScenario=0
 ){
   # 1- create an empty population
   pop<-POPULATION$new(id = id,
                       members = list(),
-                      params = generate.new.modelParameter(scenario),
+                      params = generate.new.modelParameter(ncdScenario,saScenario),
                       stats =  generate.new.stat())
   
   # 2- create member list of persons for this population 
@@ -564,7 +565,7 @@ run.one.year.no.int<-function(pop){
 # model one simulated year with intervention (from Jan 1st to Dec 31st)
 print("Loading function run.one.year.int")
 run.one.year.int<-function(pop,
-                           scenario=0, #default: no intervention
+                           ncdScenario=0, #default: no intervention
                            int.start.year, # intervention start year
                            int.end.year,#intervention last year
                            pCoverage, # prop of community screened for ncd
@@ -682,10 +683,10 @@ run.one.year.int<-function(pop,
                                khm.monthly.non.hiv.mort)
     
     # MODEL INTERVENTION ------
-    if(scenario>0)
+    if(ncdScenario>0)
       if (pop$params$CYNOW>=int.start.year && pop$params$CYNOW<int.end.year){
         pop<-model.ncd.intervention(pop = pop,
-                                    scenario = scenario,
+                                    ncdScenario = ncdScenario,
                                     pCoverage = pCoverage,
                                     pNcdTrtInitiation = pNcdTrtInitiation,
                                     pDropOut=pDropOut,
@@ -763,7 +764,7 @@ run.one.year.int<-function(pop,
 # assuming a combined trt option for hyp.diab; they will discontinue together
 # HIV intervention will run seperately in khm, we will read the input here but dont model explicit HIV intervention
 model.ncd.intervention<-function(pop,
-                                 scenario=0,
+                                 ncdScenario=0,
                                  pCoverage=0, # prop of community screened for ncd
                                  pNcdTrtInitiation=0, # prop of ncd diag starting successful trt
                                  pDropOut=0, #prob of ncd trt discontinuation
@@ -777,7 +778,7 @@ model.ncd.intervention<-function(pop,
   ##
   selectedIds=NULL
   # intervention focused at HIV clinic (among HIV.ENG)
-  if (scenario %in% c(2,3)){
+  if (ncdScenario %in% c(2,3)){
     # vector of Ids for those eligible to receive the intervention 
     vIds=c()
     invisible(lapply(c(1:length(pop$members)),function(x){
