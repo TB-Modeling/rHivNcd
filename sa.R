@@ -93,7 +93,7 @@ if (1==1) {
                            n = POP.SIZE,
                            scenario=ncdScenarios[[ncdId]]$id)
   #change param value
-  print(paste("changing param: ",saScenarios[[saId]]$param," to new value"))
+  print(paste("changing param: ",saScenarios[[saId]]$param," to new value of",saScenarios[[saId]]$newVal))
   pop$params[saScenarios[[saId]]$param]=saScenarios[[saId]]$newVal
   
   #run the model with new value

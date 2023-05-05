@@ -58,13 +58,48 @@ DIM.AGE=length(DIM.NAMES.AGE)
 DIM.HIV=length(DIM.NAMES.HIV)
 DIM.NCD=length(DIM.NAMES.NCD)
 DIM.YEAR=length(DIM.NAMES.YEAR)
+
+# we have to define parameters used in sensitivity analysis outside of MP first, to change their value before MP is built
+saParams=list(
+  #NCD EVENT RISKS############
+  #relative risk of ncd incidence by hiv status (>1 relative to hiv.neg) (can be a single value or an array)
+  relative.ncd.risk.by.hiv=1,
+  #annual growth in age/sex-specific prev of ncds relative to baseline (>1)
+  annual.growth.ncd.prev=1,
+  
+  #CVD EVENT RISKS############
+  #modeling increased cvd risk by HIV state
+  cvd.risk.multiplier.hiv=1.5,
+  #applying a single multiplier for sensitivity analysis
+  cvd.risk.multiplier=1,
+  # risk of recurrent event here to 2x original risk; able to change in sensitivity analysis
+  recurrent.cvd.event.risk.multiplier=2,
+  #probability that the first CVD event is mi (vs stroke)
+  prob.first.cvd.event.mi.male = 0.6,
+  prob.first.cvd.event.mi.female = 0.6,
+  
+  #CVD DEATHS############
+  #applying a single multiplier for sensitivity analysis
+  cvd.mortality.multiplier=1,
+  #recurrent events
+  recur.stroke.mort.OR.multiplier=2.53, # this is an ODDS RATIO (relative to current probability), so have to convert to odds and then back to probability (in returnCvdMortality function)
+  recur.mi.mortality.multiplier=1.856,
+  
+  #INTERVENTION IMPACT############
+  red.cvd.event.hyp.trt= (1-0.3),
+  red.cvd.death.hyp.trt= (1-0.26),
+  red.cvd.event.diab.trt= (1-0.32),
+  red.cvd.death.diab.trt= (1-0.42)
+)
+
 ################################################################################################################
 # MODEL PARAMETERS (MP) HOUSES ALL PARAMETERS THAT MAY BE CHANGED IN SENSITIVITY ANALYSIS. THEY'RE CREATED ONCE FOR EACH POPULATION
 cat("loading function generate.new.modelParameter ... \n")
-generate.new.modelParameter<-function(scenario){
+generate.new.modelParameter<-function(ncdScenario,saScenario,saParams){
   #variables
   MP<-list(
-    SCENARIO=scenario,
+    NCD.SCENARIO=ncdScenario,
+    SA.SCENARIO=saScenario,
     TNOW=1, #current timestep
     YNOW=1, #variable showing current year
     CYNOW=INITIAL.YEAR, #calendar year (we start one year earlier, so that we save the initial population state before simulation begins)
@@ -134,9 +169,9 @@ generate.new.modelParameter<-function(scenario){
   # MP$ncd.dist.age.sex=ncd.dist.age.sex
   
   #relative risk of ncd incidence by hiv status (>1 relative to hiv.neg) (can be a single value or an array)
-  MP$relative.ncd.risk.by.hiv=1 
+  MP$relative.ncd.risk.by.hiv=saParams$relative.ncd.risk.by.hiv 
   #annual growth in age/sex-specific prev of ncds relative to baseline (>1)
-  MP$annual.growth.ncd.prev=1
+  MP$annual.growth.ncd.prev=saParams$annual.growth.ncd.prev
   
   ########################################################
   #4-load pooled 10-year CVD risk by age/sex/ncd category
@@ -155,7 +190,7 @@ generate.new.modelParameter<-function(scenario){
   # dim(x)
   
   #modeling increased cvd risk by HIV state
-  MP$cvd.risk.multiplier.hiv=1.5
+  MP$cvd.risk.multiplier.hiv=saParams$cvd.risk.multiplier.hiv
   x[,,-1,]= MP$cvd.risk.multiplier.hiv*x[,,-1,]
   
   #applying values for 40-44 to younger agegroups and from 70-74 to older agegroups
@@ -167,7 +202,7 @@ generate.new.modelParameter<-function(scenario){
   for(i in 16:17) x[c(DIM.NAMES.AGE[i]),,,]=x["70-74",,,]
   
   #applying a single multiplier for sensitivity analysis
-  MP$cvd.risk.multiplier=1
+  MP$cvd.risk.multiplier=saParams$cvd.risk.multiplier
   x=x* MP$cvd.risk.multiplier
   
   # annual risk computed from an exponential decay
@@ -176,10 +211,10 @@ generate.new.modelParameter<-function(scenario){
   MP$monthly.cvd.risk.by.age.sex=(1-(1-annual.cvd.risk.by.age.sex)^(1/12))
   
   # risk of recurrent event here to 2x original risk; able to change in sensitivity analysis
-  MP$recurrent.cvd.event.risk.multiplier=2
+  MP$recurrent.cvd.event.risk.multiplier=saParams$recurrent.cvd.event.risk.multiplier
   #probability that the first CVD event is mi (vs stroke)
-  MP$prob.first.cvd.event.mi.male = 0.6 
-  MP$prob.first.cvd.event.mi.female = 0.6 
+  MP$prob.first.cvd.event.mi.male = saParams$prob.first.cvd.event.mi.male 
+  MP$prob.first.cvd.event.mi.female = saParams$prob.first.cvd.event.mi.female
   
   ########################################################
   #5-load CVD mortality data
@@ -189,30 +224,27 @@ generate.new.modelParameter<-function(scenario){
   MP$first.mi.monthly.mortality = mi.monthly.mortality
   
   #applying a single multiplier for sensitivity analysis
-  MP$cvd.mortality.multiplier=1
+  MP$cvd.mortality.multiplier=saParams$cvd.mortality.multiplier
   stroke.monthly.mortality=stroke.monthly.mortality*MP$cvd.mortality.multiplier
   mi.monthly.mortality=mi.monthly.mortality*MP$cvd.mortality.multiplier
   
   #recurrent events
-  recur.stroke.mort.OR.multiplier=2.53 # this is an ODDS RATIO (relative to current probability), so have to convert to odds and then back to probability (in returnCvdMortality function)
+  recur.stroke.mort.OR.multiplier=saParams$recur.stroke.mort.OR.multiplier # this is an ODDS RATIO (relative to current probability), so have to convert to odds and then back to probability (in returnCvdMortality function)
   #adjusted OR:
   x=stroke.monthly.mortality/(1-stroke.monthly.mortality) * recur.stroke.mort.OR.multiplier
   MP$rec.stroke.monthly.mortality= x/ (1+x) #back to prob
   
-  recur.mi.mortality.multiplier=1.856 
+  recur.mi.mortality.multiplier=saParams$recur.mi.mortality.multiplier
   MP$rec.mi.monthly.mortality= mi.monthly.mortality * recur.mi.mortality.multiplier
   
   ########################################################
   #6- Reduction in CVD risk by trt
-  MP$red.cvd.event.hyp.trt= (1-0.3)
-  MP$red.cvd.death.hyp.trt= (1-0.26)
-  MP$red.cvd.event.diab.trt= (1-0.32)
-  MP$red.cvd.death.diab.trt= (1-0.42)
+  MP$red.cvd.event.hyp.trt= saParams$red.cvd.event.hyp.trt
+  MP$red.cvd.death.hyp.trt= saParams$red.cvd.death.hyp.trt
+  MP$red.cvd.event.diab.trt= saParams$red.cvd.event.diab.trt
+  MP$red.cvd.death.diab.trt= saParams$red.cvd.death.diab.trt
   MP$red.cvd.event.diabHyp.trt= min(MP$red.cvd.event.hyp.trt,MP$red.cvd.event.diab.trt) #assumption
   MP$red.cvd.death.diabHyp.trt= min(MP$red.cvd.death.hyp.trt,MP$red.cvd.death.diab.trt)
-  
-  
-  
   
   return(MP)
 }
