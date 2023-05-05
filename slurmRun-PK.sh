@@ -23,5 +23,5 @@
 
 
 module load r
-Rscript driver.R $SLURM_ARRAY_TASK_ID
-# Rscript sa.R $SLURM_ARRAY_TASK_ID
+# Rscript driver.R $SLURM_ARRAY_TASK_ID
+Rscript sa.R $SLURM_ARRAY_TASK_ID
