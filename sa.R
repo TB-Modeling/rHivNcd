@@ -14,10 +14,44 @@ ncdScenarios=list(
 # EACH LINE REPRESENTS A NEW ONE-WAY VARIATION IN A PARAMETER VALUE
 saScenarios=list(
   list(id=1, param="relative.ncd.risk.by.hiv", newVal=2), #baseline=1
+  
   list(id=2, param="annual.growth.ncd.prev",  newVal=1.03),#baseline=1
-  list(id=3, param="cvd.risk.multiplier.hiv",  newVal=1),#baseline=1.5
-  list(id=4, param="cvd.risk.multiplier.hiv",  newVal=2.02)#baseline=1.5
-  # ....
+  
+  list(id=3, param="cvd.risk.multiplier",  newVal=0.75),#baseline=1
+  list(id=4, param="cvd.risk.multiplier",  newVal=1.25),#baseline=1
+  
+  list(id=5, param="cvd.risk.multiplier.hiv",  newVal=1),#baseline=1.5
+  list(id=6, param="cvd.risk.multiplier.hiv",  newVal=2.02),#baseline=1.5
+  
+  list(id=7, param="recurrent.cvd.event.risk.multiplier",  newVal=1.5),#baseline=2
+  list(id=8, param="recurrent.cvd.event.risk.multiplier",  newVal=2.5),#baseline=2
+  
+  list(id=9, param="prob.first.cvd.event.mi.male",  newVal=0.45),#baseline=0.6
+  list(id=10, param="prob.first.cvd.event.mi.male",  newVal=0.75),#baseline=0.6
+  
+  list(id=11, param="prob.first.cvd.event.mi.female",  newVal=0.45),#baseline=0.6
+  list(id=12, param="prob.first.cvd.event.mi.female",  newVal=0.75),#baseline=0.6
+  
+  list(id=13, param="cvd.mortality.multiplier",  newVal=0.75),#baseline=1
+  list(id=14, param="cvd.mortality.multiplier",  newVal=1.25),#baseline=1
+  
+  list(id=15, param="recur.stroke.mort.OR.multiplier",  newVal=1.70),#baseline=2.53
+  list(id=16, param="recur.stroke.mort.OR.multiplier",  newVal=3.76),#baseline=2.53
+  
+  list(id=17, param="recur.mi.mortality.multiplier",  newVal=1.4),#baseline=1.86
+  list(id=18, param="recur.mi.mortality.multiplier",  newVal=2.3),#baseline=1.86
+  
+  list(id=19, param="red.cvd.event.hyp.trt",  newVal=0.60),#baseline=0.70
+  list(id=20, param="red.cvd.event.hyp.trt",  newVal=0.85),#baseline=0.70
+  
+  list(id=21, param="red.cvd.death.hyp.trt",  newVal=0.64),#baseline=0.74
+  list(id=22, param="red.cvd.death.hyp.trt",  newVal=0.85),#baseline=0.74
+  
+  list(id=23, param="red.cvd.event.diab.trt",  newVal=0.53),#baseline=0.68
+  list(id=24, param="red.cvd.event.diab.trt",  newVal=0.87),#baseline=0.68
+  
+  list(id=25, param="red.cvd.death.diab.trt",  newVal=0.37),#baseline=0.58
+  list(id=26, param="red.cvd.death.diab.trt",  newVal=0.91) #baseline=0.58
 )
 #######################################################
 
