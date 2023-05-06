@@ -77,7 +77,7 @@ if (1==2){
 # # #######################################################
 # # SINGLE RUN ON ROCKFISH
 if (1==1) {
-  vReps=1:100 #reps
+  vReps=1:2#100 #reps
   vNcdScenarios=1:5 #scenarios
   #############
   print("running models sequentially ....")
