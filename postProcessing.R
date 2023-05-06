@@ -5,12 +5,12 @@ source("postProcessingFunctions.R") # moved all functions to this file so I can 
 
 
 SCENARIOS = c(1:5)
-REPLICATIONS = c(1:30)
-OUTPUTS.DIR = "outputs/05-03/"
+REPLICATIONS = c(1:100)
+OUTPUTS.DIR = "outputs/"
 
 ncd.simset=read.ncd.simset()
 #save(ncd.simset, file = paste0("outputs/ncd.simset_",Sys.Date(),"_small.Rdata"))
-khm.simset=read.khm.simset()
+# khm.simset=read.khm.simset()
 khm.simset.full = read.khm.simset.full()
 
 intervention.names = c("1-baseline",
@@ -20,10 +20,10 @@ intervention.names = c("1-baseline",
                        "5-hiv/ncd community screening and co-location")
 names(ncd.simset) = intervention.names
 
-results.array = generate.events.results.array(ncd.simset,n.reps=30)
-save(results.array, file = paste0("outputs/ncd.results.array_",Sys.Date(),".Rdata"))
+results.array.cumulative = generate.cumulative.events.results.array(ncd.simset,n.reps=100)
+save(results.array.cumulative, file = paste0("outputs/ncd.results.array.cumulative_",Sys.Date(),".Rdata"))
 
-results.array.annual = generate.events.results.array.annual(ncd.simset,n.reps=30)
+results.array.annual = generate.annual.events.results.array(ncd.simset,n.reps=100)
 save(results.array.annual, file = paste0("outputs/ncd.results.array.annual_",Sys.Date(),".Rdata"))
 
 

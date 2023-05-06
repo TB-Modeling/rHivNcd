@@ -68,7 +68,7 @@ simplot.ncd.prevalence.baseline = function(...,
       if(data.type %in% c("hiv.incidence","mi.inc","stroke.inc",
                           "hyp.inc","diab.inc","diab.hyp.inc",
                           "hiv.mortality","non.hiv.mortality","cvd.mortality")){
-        value = filter.5D.stats.by.field(sim[[j]]$stats[[ncd.data.type.x]], 
+        value = filter.5D.stats.by.field(sim[[j]][[ncd.data.type.x]], 
                                          years = years,
                                          ages = ages, 
                                          sexes = sexes,
@@ -110,7 +110,7 @@ simplot.ncd.prevalence.baseline = function(...,
         }
         
         # note that ncd.status or hiv.status may have been overwritten from whatever was specified in the arguments
-        value = filter.5D.stats.by.field(sim[[j]]$stats$n.state.sizes, 
+        value = filter.5D.stats.by.field(sim[[j]]$n.state.sizes, 
                                          years = years,
                                          ages = ages, 
                                          sexes = sexes,
@@ -121,7 +121,7 @@ simplot.ncd.prevalence.baseline = function(...,
       }
       
       if(view.as.rate){
-        denominator = filter.5D.stats.by.field(sim[[j]]$stats$n.state.sizes, 
+        denominator = filter.5D.stats.by.field(sim[[j]]$n.state.sizes, 
                                                years = years,
                                                ages = ages, 
                                                sexes = sexes,

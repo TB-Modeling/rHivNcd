@@ -31,9 +31,9 @@ read.ncd.simset = function(){
     
     invisible(lapply(REPLICATIONS,function(rep){
       # change this to read in only the stats list
-      pop<-readRDS(paste0(OUTPUTS.DIR,"popList-s",scenario,"-rep",rep))
-      print(paste0("reading ",OUTPUTS.DIR,"popList-s",scenario,"-rep",rep, " for the ncd model"))
-      temp.simset.ncd[[rep]] <<- pop
+      stats<-readRDS(paste0(OUTPUTS.DIR,"pop-stats-ncdScenario",scenario,"-rep",rep))
+      print(paste0("reading ",OUTPUTS.DIR,"pop-stats-ncdScenario",scenario,"-rep",rep, " for the ncd model"))
+      temp.simset.ncd[[rep]] <<- stats
       
       return(temp.simset.ncd)
     }))
@@ -79,19 +79,13 @@ read.khm.simset = function(){
 read.khm.simset.full = function(){
   khm.simset.full=vector("list",length(SCENARIOS))
   invisible(lapply(SCENARIOS, function(scenario){
-    temp.simset.khm.full = vector("list",length(REPLICATIONS))
+    temp.simset.khm.full = list()
     
-    invisible(lapply(REPLICATIONS,function(rep){
-      pop<-readRDS(paste0(OUTPUTS.DIR,"popList-s",scenario,"-rep",rep))
-      print(paste0("reading ",OUTPUTS.DIR,"popList-s",scenario,"-rep",rep, " for the hiv model (full)"))
-      temp.simset.khm.full[[rep]] <<- pop$params$khm.full
-      
-      return(temp.simset.khm.full)
-    }))
-    
-    khm.simset.full[[scenario]]<<-temp.simset.khm.full # if still using scenario 0; make this scenario + 1
-    rm(temp.simset.khm.full)
-    return(khm.simset.full)
+    load(paste0("data/hiv_simset_scenario",scenario,".RData"))
+    temp.simset.khm.full = khm.full
+    khm.simset.full[[scenario]]<<-temp.simset.khm.full 
+    return(khm.simset.full)    
+
   }))
   
   for(i in 1:length(SCENARIOS)){
@@ -106,6 +100,7 @@ read.khm.simset.full = function(){
 generate.annual.results = function(simset,
                                    data.type,
                                    n.reps,
+                                   years=as.character(c(2014:2031)),
                                    summary.statistic="median"){
   
   simset = simset[1:n.reps]
@@ -114,11 +109,11 @@ generate.annual.results = function(simset,
                    sex=DIM.NAMES.SEX,
                    hiv.status=DIM.NAMES.HIV,
                    ncd.status=DIM.NAMES.NCD,
-                   years=as.character(c(2014:2031)),
+                   years=years,
                    rep=c(1:n.reps))
   
   data = sapply(simset, function(rep){
-    rep$stats[[data.type]]
+    rep[[data.type]]
   })
   
   dim(data) = sapply(dim.names,length)
@@ -131,6 +126,7 @@ generate.annual.results = function(simset,
 
 generate.cumulative.results = function(simset,
                                        data.type,
+                                       years=as.character(c(2023:2030)),
                                        n.reps,
                                        summary.statistic="median"){
   
@@ -143,7 +139,7 @@ generate.cumulative.results = function(simset,
                    rep=c(1:n.reps))
   
   cumulative.data = sapply(simset, function(rep){
-    x = apply(rep$stats[[data.type]], c(1:4), sum) # sum over years 
+    x = apply(rep[[data.type]][,,,,years], c(1:4), sum) # sum over years 
   })
   
   dim(cumulative.data) = sapply(dim.names,length)
@@ -160,6 +156,7 @@ generate.cumulative.results = function(simset,
 
 plot.cumulative.outcome = function(simset.1,
                                    simset.2,
+                                   years=as.character(c(2023:2030)),
                                    data.type,
                                    dimension){
   
@@ -173,7 +170,7 @@ plot.cumulative.outcome = function(simset.1,
                        sex=DIM.NAMES.SEX,
                        hiv.status=DIM.NAMES.HIV,
                        ncd.status=DIM.NAMES.NCD,
-                       years=as.character(c(2014:2031)))
+                       years=years)
   
   dim.names = list(dim=full.dimnames[[dimension]],
                    scenario=c("scen_a","scen_b"))
@@ -193,9 +190,10 @@ plot.cumulative.outcome = function(simset.1,
 
 plot.cumulative.outcome.boxplot = function(...,
                                            data.types,
+                                           years=as.character(c(2023:2030)),
                                            dimension,
                                            facet.by=NULL,
-                                           n.reps=30){
+                                           n.reps=100){
   simsets = list(...)
   
   dim.names = list(age=DIM.NAMES.AGE,
@@ -209,12 +207,12 @@ plot.cumulative.outcome.boxplot = function(...,
   for(i in 1:length(simsets)){
     simset = simsets[[i]]
     
-    scenario.number = as.numeric(simset[[1]]$params$khm$intervention.id)
+    # scenario.number = as.numeric(simset[[1]][["ncd.id"]])
 
     if("n.cvd.events" %in% data.types){
       
-      data.1 = sapply(simset, function(rep){x = apply(rep$stats[["n.mi.inc"]], c(1:4), sum)})
-      data.2 = sapply(simset, function(rep){x = apply(rep$stats[["n.stroke.inc"]], c(1:4), sum)})
+      data.1 = sapply(simset, function(rep){x = apply(rep[["n.mi.inc"]][,,,,years], c(1:4), sum)})
+      data.2 = sapply(simset, function(rep){x = apply(rep[["n.stroke.inc"]][,,,,years], c(1:4), sum)})
       data = data.1+data.2
       dim(data) = sapply(dim.names,length)
       dimnames(data)=dim.names
@@ -234,14 +232,14 @@ plot.cumulative.outcome.boxplot = function(...,
       dimnames(data.by.dim) = dim.names.new
       
       one.df = reshape2::melt(data.by.dim) 
-      one.df$scenario.id = scenario.number
+      one.df$scenario.id = i
       one.df$data.type = "n.cvd.events"
       df.sim = rbind(df.sim, one.df)  
       
     } else {
       for(d in data.types){
         
-        data = sapply(simset, function(rep){x = apply(rep$stats[[d]], c(1:4), sum)})
+        data = sapply(simset, function(rep){x = apply(rep[[d]][,,,,years], c(1:4), sum)})
         dim(data) = sapply(dim.names,length)
         dimnames(data) = dim.names
         
@@ -260,7 +258,7 @@ plot.cumulative.outcome.boxplot = function(...,
         dimnames(data.by.dim) = dim.names.new
         
         one.df = reshape2::melt(data.by.dim) 
-        one.df$scenario.id = scenario.number
+        one.df$scenario.id = i
         one.df$data.type = d
         df.sim = rbind(df.sim, one.df)   
         
@@ -292,8 +290,9 @@ plot.cumulative.outcome.boxplot = function(...,
 }
 
 
-generate.events.results.array = function(simset.list,
+generate.cumulative.events.results.array = function(simset.list,
                                          n.reps,
+                                         years=as.character(c(2023:2030)),
                                          ages = DIM.NAMES.AGE,
                                          sexes = DIM.NAMES.SEX,
                                          hiv.status = DIM.NAMES.HIV,
@@ -318,7 +317,7 @@ generate.events.results.array = function(simset.list,
     sapply(reps, function(rep){
       sapply(outcomes, function(x){
         
-        apply(simset[[rep]]$stats[[x]], c(1:4), sum)
+        apply(simset[[rep]][[x]][,,,,years], c(1:4), sum)
         
       })
     })
@@ -330,7 +329,7 @@ generate.events.results.array = function(simset.list,
   rv
 }
 
-generate.events.results.array.annual = function(simset.list,
+generate.annual.events.results.array = function(simset.list,
                                                 n.reps,
                                                 ages = DIM.NAMES.AGE,
                                                 sexes = DIM.NAMES.SEX,
@@ -359,7 +358,7 @@ generate.events.results.array.annual = function(simset.list,
     sapply(reps, function(rep){
       sapply(outcomes, function(x){
         
-        simset[[rep]]$stats[[x]][ages,sexes,hiv.status,ncd.status,as.character(years)]
+        simset[[rep]][[x]][ages,sexes,hiv.status,ncd.status,as.character(years)]
         
       })
     })

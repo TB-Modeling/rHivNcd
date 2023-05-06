@@ -226,21 +226,18 @@ simplot = function(..., # can pass any combination of single simulations or full
           }
             
           # note that ncd.status or hiv.status may have been overwritten from whatever was specified in the arguments
-          value = filter.5D.stats.by.field(sim[[j]]$stats$n.state.sizes, 
+          value = filter.5D.stats.by.field(sim[[j]]$n.state.sizes, 
                                            years = years,
                                            ages = ages, 
                                            sexes = sexes,
                                            hiv.status = hiv.status,
                                            ncd.status = ncd.status,
                                            keep.dimensions = keep.dimensions)
-            
-          
-          stop("Melissa add in manipulations to value here - to combine comorbidities, etc.")
           
         }
         
         if(view.as.rate){
-          denominator = filter.5D.stats.by.field(sim[[j]]$stats$n.state.sizes, 
+          denominator = filter.5D.stats.by.field(sim[[j]]$n.state.sizes, 
                                                 years = years,
                                                 ages = ages, 
                                                 sexes = sexes,
