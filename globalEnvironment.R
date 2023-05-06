@@ -115,7 +115,7 @@ generate.new.modelParameter<-function(ncdScenario=0,
   # MP$khm.full=khm.full # leaving full simset in here for plotting purposes
   # class(MP$khm.full) = "khm_simulation_output"
   #sample one random khm model:
-  x=sample(1:length(MP$khm.full),1)
+  x=sample(1:length(khm.full),1)
   print(paste("KHM model ",x," was sampled"))
   MP$khm.id=x #khm id that was sampled for this run
   khm = khm.full[[x]]# randomly sample one hiv sim from the length of n.hiv.sims
