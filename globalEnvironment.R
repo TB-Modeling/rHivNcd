@@ -11,7 +11,7 @@ DEBUGMODE=T
 
 ANNUAL.TIMESTEPS=12 #how many timepsteps in a year?
 INITIAL.YEAR=2014 #simulation starts
-END.YEAR=2030 #simulation ends
+END.YEAR=2040 #simulation ends
 #
 AGE.INTERVAL=5
 MIN.AGE=0
@@ -111,8 +111,22 @@ generate.new.modelParameter<-function(rep=0,
   
   ########################################################
   #1- load HIV data  
-  print(paste0("reading data/hiv_simset_scenario",MP$NCD.SCENARIO,".RData ..."))
-  load(paste0("data/hiv_simset_scenario",MP$NCD.SCENARIO,".RData")) # extended name for different datasets from KHM
+  if(MP$NCD.SCENARIO %in% c(1,2,5)){
+    print(paste0("reading data/hiv_simset_noint.RData ..."))
+    load(paste0("data/hiv_simset_noint.RData")) # extended name for different datasets from KHM
+  }
+  if(MP$NCD.SCENARIO %in% c(3,4)){
+    print(paste0("reading data/hiv_simset_retsupp.RData ..."))
+    load(paste0("data/hiv_simset_retsupp.RData")) # extended name for different datasets from KHM
+  }
+  if(MP$NCD.SCENARIO %in% c(6)){
+    print(paste0("reading data/hiv_simset_tsteng.RData ..."))
+    load(paste0("data/hiv_simset_tsteng.RData")) # extended name for different datasets from KHM
+  }
+  if(MP$NCD.SCENARIO %in% c(7)){
+    print(paste0("reading data/hiv_simset_comp.RData ..."))
+    load(paste0("data/hiv_simset_comp.RData")) # extended name for different datasets from KHM
+  }
   
   # MP$khm.full=khm.full # leaving full simset in here for plotting purposes
   # class(MP$khm.full) = "khm_simulation_output"

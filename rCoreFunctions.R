@@ -779,7 +779,7 @@ model.ncd.intervention<-function(pop,
   ##
   selectedIds=NULL
   # intervention focused at HIV clinic (among HIV.ENG)
-  if (ncdScenario %in% c(2,3)){
+  if (ncdScenario %in% c(2,3,4)){
     # vector of Ids for those eligible to receive the intervention 
     vIds=c()
     invisible(lapply(c(1:length(pop$members)),function(x){
