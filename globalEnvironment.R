@@ -12,6 +12,7 @@ DEBUGMODE=T
 ANNUAL.TIMESTEPS=12 #how many timepsteps in a year?
 INITIAL.YEAR=2014 #simulation starts
 END.YEAR=2040 #simulation ends
+
 #
 AGE.INTERVAL=5
 MIN.AGE=0
@@ -274,8 +275,8 @@ generate.new.stat<-function(rep=0,
                             saScenario=0){
   
   #global statistics
-  DIM.N=END.YEAR-INITIAL.YEAR+2
-  DIM.NAMES.N=c(INITIAL.YEAR:(END.YEAR+1))
+  DIM.N=END.YEAR-INITIAL.YEAR+1
+  DIM.NAMES.N=c(INITIAL.YEAR:(END.YEAR))
   
   #temporary empty arrays to initialize stats
   #1D
