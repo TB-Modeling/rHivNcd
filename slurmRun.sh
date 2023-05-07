@@ -14,7 +14,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=4GB
-#SBATCH --array=1-500
+#SBATCH --array=1-700
 #SBATCH --output=outputs/outSlurm_%a.out
 #SBATCH --error=outputs/outSlurm_%a.err
 #SBATCH --mail-type=end
