@@ -40,7 +40,7 @@ ncdScenarios=list(
 
 # # #######################################################
 # # SINGLE RUN ON ROCKFISH
-if (1==1) {
+if (1==2) {
   vReps=1:100 #reps
   vNcdScenarios=1:5 #scenarios
   #############
@@ -84,8 +84,8 @@ if (1==1) {
     )
   
   #saving population stat and param files separately
-  saveRDS(pop$stats,file = paste0("outputs-sa/popStats-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
-  saveRDS(pop$params,file = paste0("outputs-sa/popParams-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+  saveRDS(pop$stats,file = paste0("outputs/popStats-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+  saveRDS(pop$params,file = paste0("outputs/popParams-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
   
   # saving time
   end_time <- Sys.time()
@@ -98,9 +98,9 @@ if (1==1) {
 
 # #######################################################
 # MULTI REPS
-if (1==2){
+if (1==1){
   vReps=1#:10 #reps
-  vNcdScenarios=1:7 #scenarios
+  vNcdScenarios=7 #scenarios
   print("running models sequentially ....")
   nReps=length(vReps)
   nNcdScenarios=length(vNcdScenarios)
@@ -117,9 +117,10 @@ if (1==2){
                                  ncdScenario = ncdScenarios[[ncdId]]$id,
                                  saScenario = 0)
       #run sims
-      while(pop$params$CYNOW<= 2030)
-        run.one.year.int(pop,
-                         scenario =ncdScenarios[[ncdId]]$id,
+      
+      while(pop$params$CYNOW<= END.YEAR)
+        run.one.year.int(pop, 
+                           ncdScenario =ncdScenarios[[ncdId]]$id,
                          int.start.year = 2023,
                          int.end.year = 2030,
                          pCoverage = ncdScenarios[[ncdId]]$pCoverage,
@@ -127,10 +128,10 @@ if (1==2){
                          pDropOut=ncdScenarios[[ncdId]]$pDropOut
         )
 
-      #saving population
-      res=list(stats=pop$stats,
-               params=pop$params)
-      saveRDS(res,file = paste0("outputs/popList-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+      #saving population stat and param files separately
+      x=0
+      saveRDS(pop$stats,file = paste0("outputs/popStats-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+      saveRDS(pop$params,file = paste0("outputs/popParams-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
 
     })
   })
