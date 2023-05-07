@@ -17,7 +17,7 @@ AGE.INTERVAL=5
 MIN.AGE=0
 MAX.AGE=85*12
 
-POP.SIZE=1000000
+POP.SIZE=100
 
 #
 FEMALE=1
@@ -96,10 +96,12 @@ SA.PARAMS=list(
 ################################################################################################################
 # MODEL PARAMETERS (MP) HOUSES ALL PARAMETERS THAT MAY BE CHANGED IN SENSITIVITY ANALYSIS. THEY'RE CREATED ONCE FOR EACH POPULATION
 cat("loading function generate.new.modelParameter ... \n")
-generate.new.modelParameter<-function(ncdScenario=0,
+generate.new.modelParameter<-function(rep=0,
+                                      ncdScenario=0,
                                       saScenario=0){
   #variables
   MP<-list(
+    REP=rep,
     NCD.SCENARIO=ncdScenario,
     SA.SCENARIO=saScenario,
     TNOW=1, #current timestep
@@ -253,7 +255,10 @@ generate.new.modelParameter<-function(ncdScenario=0,
 
 ################################################################################################################
 cat("loading function generate.new.stat ... \n")
-generate.new.stat<-function(){
+generate.new.stat<-function(rep=0,
+                            ncdScenario=0,
+                            saScenario=0){
+  
   #global statistics
   DIM.N=END.YEAR-INITIAL.YEAR+2
   DIM.NAMES.N=c(INITIAL.YEAR:(END.YEAR+1))
@@ -280,7 +285,9 @@ generate.new.stat<-function(){
   
   
   stats<-list(
-    ncd.id=0,
+    rep.id=rep,
+    ncd.id=ncdScenario,
+    sa.id=saScenario,
     
     #1D arrays for entire population over time
     pop.size=v1temp,
