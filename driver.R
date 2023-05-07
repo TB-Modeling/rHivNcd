@@ -42,7 +42,7 @@ ncdScenarios=list(
 # # SINGLE RUN ON ROCKFISH
 if (1==2) {
   vReps=1:100 #reps
-  vNcdScenarios=1:5 #scenarios
+  vNcdScenarios=1:7 #scenarios
   #############
   print("running models sequentially ....")
   nReps=length(vReps)
