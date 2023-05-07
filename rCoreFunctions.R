@@ -10,14 +10,15 @@ print("Sourcing rCoreFunctions.R ... ")
 print("Loading function create.initial.pop.list")
 initialize.simulation <- function( id=0,
                                    n=0 ,
-                                   ncdScenario=0,
-                                   saScenario=0
+                                   rep=0, #replication id
+                                   ncdScenario=0, #ncd scenario
+                                   saScenario=0 #sa scenario
 ){
   # 1- create an empty population
   pop<-POPULATION$new(id = id,
                       members = list(),
-                      params = generate.new.modelParameter(ncdScenario,saScenario),
-                      stats =  generate.new.stat())
+                      params = generate.new.modelParameter(rep,ncdScenario,saScenario),
+                      stats =  generate.new.stat(rep,ncdScenario,saScenario))
   
   # 2- create member list of persons for this population 
   #subset the first n row to create n persons
