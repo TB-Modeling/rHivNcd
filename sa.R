@@ -66,32 +66,40 @@ print("Sourcing dependencies")
   source("rCoreFunctions.R")
   # source("plots.R")
 }
+
+{
+  vReps=c(1:2) #vector of reps 
+vNcdScenarios=c(1,5) #specific NCD scenarios to run
+vSaScenarios=c(1:length(saScenarios)) #vector of sa scenario ids
+#
+nSaScenaios=length(vSaScenarios)
+nNcdScenarios=length(vNcdScenarios)
+nReps=length(vReps)
+print(paste("Required number of nodes is:", nSaScenaios*nNcdScenarios*nReps))
+}
 #######################################################
 
 if (1==1) {
   args = commandArgs(trailingOnly=TRUE)
   x=as.numeric(args[1])
   
-  vReps=c(1:2) #vector of reps 
-  vSaScenarios=c(1:length(saScenarios)) #vector of sa scenario ids
-  #'@MS: should we run each sa scenario for both ncd scenarios 1 (no int) and 3 & 5 (intervention)?
-  vNcdScenarios=c(1,5) #specific NCD scenarios to run
   # filter ncd scenarios to only keep the ones that we need
   ncdScenarios=ncdScenarios[vNcdScenarios]
   
-  nSaScenaios=length(vSaScenarios)
-  nNcdScenarios=length(vNcdScenarios)
-  rep=floor((x-1)/(nSaScenaios+nNcdScenarios))+1
-  ncdId= floor((x-1)/nSaScenaios)%%nNcdScenarios+1
-  saId= (x-1)%%(nSaScenaios)+1
-  
   print(paste("running SA models in parallel with",length(vReps),"reps,",nSaScenaios," saScenarios,",nNcdScenarios,"ncdScenarios"))
-  #  for (x in c(1:60)){
-  #   rep=floor((x-1)/(nSaScenaios+nNcdScenarios))+1
+  
+  # for (x in c(1:156)){
+  #   rep=floor((x-1)/(nSaScenaios*nNcdScenarios))+1
   #   ncdId= floor((x-1)/nSaScenaios)%%nNcdScenarios+1
   #   saId= (x-1)%%(nSaScenaios)+1
-  #   print(paste("x=",x,"rep=",rep,"ncd=",ncdId,"sa=",saId))
-  # }
+  #   # print(paste("x=",x,"rep=",rep,"ncd=",ncdId,"sa=",saId))
+  #   print(paste0("outputs-sa/pop-stats-saScenario",saScenarios[[saId]]$id,"-ncdScenario",ncdScenarios[[ncdId]]$id,"-rep",rep))
+  #    }
+
+  
+  rep=floor((x-1)/(nSaScenaios*nNcdScenarios))+1
+  ncdId= floor((x-1)/nSaScenaios)%%nNcdScenarios+1
+  saId= (x-1)%%(nSaScenaios)+1
   
  # run a single SA scenario
   set.seed(rep)
