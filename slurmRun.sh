@@ -10,13 +10,13 @@
 
 #SBATCH --partition=defq
 #SBATCH --job-name=hivncd-slurm
-#SBATCH --time=15:00:0
-#SBATCH --cpus-per-task=5
+#SBATCH --time=10:00:0
+#SBATCH --cpus-per-task=4
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=4GB
-#SBATCH --array=701-800
-#SBATCH --output=outputs-1M/outSlurm_%a.out 
-#SBATCH --error=outputs-1M/outSlurm_%a.err
+#SBATCH --array=1-700
+#SBATCH --output=outputs/outSlurm_%a.out
+#SBATCH --error=outputs/outSlurm_%a.err
 #SBATCH --mail-type=end
 #SBATCH --mail-user=mschnur3@jhu.edu
 
