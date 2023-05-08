@@ -4,7 +4,15 @@ source("plots.R")
 source("postProcessingFunctions.R") # moved all functions to this file so I can just source it 
 
 
-SCENARIOS = c(1:5)
+SCENARIOS = c(1:7)
+HIV.SCENARIOS = c("noint", # NCD scen 1
+                  "noint", # NCD scen 2
+                  "retsupp",  # NCD scen 3
+                  "retsupp",  # NCD scen 4
+                  "noint",  # NCD scen 5
+                  "tsteng",  # NCD scen 6
+                  "comp"  # NCD scen 7
+                     )
 REPLICATIONS = c(1:100)
 OUTPUTS.DIR = "outputs/"
 
@@ -12,13 +20,13 @@ ncd.simset=read.ncd.simset()
 #save(ncd.simset, file = paste0("outputs/ncd.simset_",Sys.Date(),"_small.Rdata"))
 # khm.simset=read.khm.simset()
 khm.simset.full = read.khm.simset.full()
-
-intervention.names = c("1-baseline",
-                       "2-ncd screening at hiv clinic",
-                       "3-ncd care co-located with hiv",
-                       "4-hiv/ncd community screening",
-                       "5-hiv/ncd community screening and co-location")
-names(ncd.simset) = intervention.names
+# 
+# intervention.names = c("1-baseline",
+#                        "2-ncd screening at hiv clinic",
+#                        "3-ncd care co-located with hiv",
+#                        "4-hiv/ncd community screening",
+#                        "5-hiv/ncd community screening and co-location")
+# names(ncd.simset) = intervention.names
 
 results.array.cumulative = generate.cumulative.events.results.array(ncd.simset,n.reps=100)
 save(results.array.cumulative, file = paste0("outputs/ncd.results.array.cumulative_",Sys.Date(),".Rdata"))

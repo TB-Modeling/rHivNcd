@@ -5,10 +5,12 @@
 # LIST OF NCD SCENARIOS
 ncdScenarios=list(
   list(id=1,pCoverage=0.0,pNcdTrtInitiation=0.0,pDropOut=0.00),
-  list(id=2,pCoverage=0.1,pNcdTrtInitiation=0.8,pDropOut=0.05),
-  list(id=3,pCoverage=0.1,pNcdTrtInitiation=0.9,pDropOut=0.00),
-  list(id=4,pCoverage=0.1,pNcdTrtInitiation=0.8,pDropOut=0.05),
-  list(id=5,pCoverage=0.1,pNcdTrtInitiation=0.9,pDropOut=0.00)
+  list(id=2,pCoverage=0.1,pNcdTrtInitiation=0.6,pDropOut=0.10), # basic NCD package (HIV clinic)
+  list(id=3,pCoverage=0.1,pNcdTrtInitiation=0.6,pDropOut=0.10), # basic NCD package + HIV retention/suppression (HIV clinic)
+  list(id=4,pCoverage=0.1,pNcdTrtInitiation=0.8,pDropOut=0.05), # intensive NCD + HIV retention/suppression  (HIV clinic)
+  list(id=5,pCoverage=0.1,pNcdTrtInitiation=0.6,pDropOut=0.10), # basic NCD package (community)
+  list(id=6,pCoverage=0.1,pNcdTrtInitiation=0.6,pDropOut=0.10), # basic NCD package + HIV testing/engagement (community)
+  list(id=7,pCoverage=0.1,pNcdTrtInitiation=0.8,pDropOut=0.05) # intensive NCD + comprehensive HIV [t/e/r/s] (community)
 )
 # LIST OF SENSITIVITY ANALYSIS SCENARIOS
 # EACH LINE REPRESENTS A NEW ONE-WAY VARIATION IN A PARAMETER VALUE
@@ -68,8 +70,8 @@ print("Sourcing dependencies")
 }
 
 {
-  vReps=c(1:10) #vector of reps 
-  vNcdScenarios=c(1,5) #specific NCD scenarios to run
+  vReps=c(1:100) #vector of reps 
+  vNcdScenarios=c(1,7) #specific NCD scenarios to run
   vSaScenarios=c(1:length(saScenarios)) #vector of sa scenario ids
   #
   nSaScenaios=length(vSaScenarios)

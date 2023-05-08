@@ -22,17 +22,22 @@
 #                                  outcomes = c("n.mi.inc","n.stroke.inc", "n.deaths.hiv", "n.deaths.cvd","n.deaths.non.hiv"))
 
 
-# NCD SIMSET: List of length (5), where each element is a scenario; 
+# NCD SIMSET: List of length (7), where each element is a scenario; 
 # each scenario is a list of length (reps), where each element is a single sim
 read.ncd.simset = function(){
+  
   ncd.simset=vector("list",length(SCENARIOS))
   invisible(lapply(SCENARIOS, function(scenario){
     temp.simset.ncd = vector("list",length(REPLICATIONS))
     
     invisible(lapply(REPLICATIONS,function(rep){
       # change this to read in only the stats list
-      stats<-readRDS(paste0(OUTPUTS.DIR,"pop-stats-ncdScenario",scenario,"-rep",rep))
-      print(paste0("reading ",OUTPUTS.DIR,"pop-stats-ncdScenario",scenario,"-rep",rep, " for the ncd model"))
+      files=list.files(OUTPUTS.DIR)
+      file = files[endsWith(files,paste0("ncd",scenario,"-rep",rep))]
+      
+      stats<-readRDS(paste0(OUTPUTS.DIR,file))
+      
+      print(paste0("reading ",OUTPUTS.DIR,"popStats-",scenario,"-rep",rep, " for the ncd model"))
       temp.simset.ncd[[rep]] <<- stats
       
       return(temp.simset.ncd)
@@ -46,7 +51,7 @@ read.ncd.simset = function(){
   ncd.simset
 }
 
-# KHM SIMSET: List of length (5), where each element is a scenario; 
+# KHM SIMSET: List of length (7), where each element is a scenario; 
 # each scenario is a list of length (reps), where each element is a single sim (that was sampled for the corresponding ncd sim)
 read.khm.simset = function(){
   khm.simset=vector("list",length(SCENARIOS))
@@ -73,15 +78,18 @@ read.khm.simset = function(){
   khm.simset
 }
 
-# KHM SIMSET FULL: List of length (5), where each element is a scenario; 
+# KHM SIMSET FULL: List of length (7), where each element is a scenario; 
 # each scenario is a list of length (reps), where each element is a simset; 
 # each simset is a list of length (n.sims), where each element is a single sim 
 read.khm.simset.full = function(){
   khm.simset.full=vector("list",length(SCENARIOS))
   invisible(lapply(SCENARIOS, function(scenario){
+    
+    hiv.scenario=HIV.SCENARIOS[scenario] # extract the HIV scenario name 
     temp.simset.khm.full = list()
     
-    load(paste0("data/hiv_simset_scenario",scenario,".RData"))
+    load(paste0("data/hiv_simset_",hiv.scenario,".RData"))
+    print(paste0("reading data/hiv_simset_",hiv.scenario,".RData"))
     temp.simset.khm.full = khm.full
     khm.simset.full[[scenario]]<<-temp.simset.khm.full 
     return(khm.simset.full)    
@@ -292,7 +300,7 @@ plot.cumulative.outcome.boxplot = function(...,
 
 generate.cumulative.events.results.array = function(simset.list,
                                          n.reps,
-                                         years=as.character(c(2023:2030)),
+                                         years=as.character(c(2023:2040)),
                                          ages = DIM.NAMES.AGE,
                                          sexes = DIM.NAMES.SEX,
                                          hiv.status = DIM.NAMES.HIV,
