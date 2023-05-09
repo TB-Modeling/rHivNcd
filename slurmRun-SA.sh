@@ -11,15 +11,15 @@
 
 #SBATCH --partition=defq
 #SBATCH --job-name=hivncd-SA
-#SBATCH --time=00:05:0
-#SBATCH --cpus-per-task=1
+#SBATCH --time=13:00:0
+#SBATCH --cpus-per-task=4
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=4GB
-#SBATCH --array=1-5200
+#SBATCH --array=1-260
 #SBATCH --output=outputs-sa/outSlurm_%a.out
 #SBATCH --error=outputs-sa/outSlurm_%a.err
 #SBATCH --mail-type=end
-#SBATCH --mail-user=pkasaie@jhu.edu
+#SBATCH --mail-user=mschnur3@jhu.edu
 
 
 module load r
