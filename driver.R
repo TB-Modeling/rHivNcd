@@ -28,14 +28,17 @@ print("Sourcing dependencies")
 }
 #######################################################
 # LIST OF NCD SCENARIOS
+#coverage and dropouts should be specified as monthy values
+pMonthlyCoverage=0.1/12#assuming 10% annual coverage 
+
 ncdScenarios=list(
   list(id=1,pCoverage=0.0,pNcdTrtInitiation=0.0,pDropOut=0.00),
-  list(id=2,pCoverage=0.1,pNcdTrtInitiation=0.6,pDropOut=0.10), # basic NCD package (HIV clinic)
-  list(id=3,pCoverage=0.1,pNcdTrtInitiation=0.6,pDropOut=0.10), # basic NCD package + HIV retention/suppression (HIV clinic)
-  list(id=4,pCoverage=0.1,pNcdTrtInitiation=0.8,pDropOut=0.05), # intensive NCD + HIV retention/suppression  (HIV clinic)
-  list(id=5,pCoverage=0.1,pNcdTrtInitiation=0.6,pDropOut=0.10), # basic NCD package (community)
-  list(id=6,pCoverage=0.1,pNcdTrtInitiation=0.6,pDropOut=0.10), # basic NCD package + HIV testing/engagement (community)
-  list(id=7,pCoverage=0.1,pNcdTrtInitiation=0.8,pDropOut=0.05) # intensive NCD + comprehensive HIV [t/e/r/s] (community)
+  list(id=2,pCoverage= pMonthlyCoverage,pNcdTrtInitiation=0.6,pDropOut=0.10/12), # basic NCD package (HIV clinic)
+  list(id=3,pCoverage=pMonthlyCoverage,pNcdTrtInitiation=0.6,pDropOut=0.10/12), # basic NCD package + HIV retention/suppression (HIV clinic)
+  list(id=4,pCoverage=pMonthlyCoverage,pNcdTrtInitiation=0.8,pDropOut=0.05/12), # intensive NCD + HIV retention/suppression  (HIV clinic)
+  list(id=5,pCoverage=pMonthlyCoverage,pNcdTrtInitiation=0.6,pDropOut=0.10/12), # basic NCD package (community)
+  list(id=6,pCoverage=pMonthlyCoverage,pNcdTrtInitiation=0.6,pDropOut=0.10/12), # basic NCD package + HIV testing/engagement (community)
+  list(id=7,pCoverage=pMonthlyCoverage,pNcdTrtInitiation=0.8,pDropOut=0.05/12) # intensive NCD + comprehensive HIV [t/e/r/s] (community)
 )
 
 # # #######################################################
