@@ -77,7 +77,7 @@ if (1==1) {
                              ncdScenario = ncdScenarios[[ncdId]]$id,
                              saScenario = 0)
   #run sims
-  while(pop$params$CYNOW<= 2030)
+  while(pop$params$CYNOW<= END.YEAR)
     run.one.year.int(pop,
                      ncdScenario = ncdScenarios[[ncdId]]$id,
                      int.start.year = 2023,
