@@ -158,6 +158,19 @@ POPULATION<-R6Class("POPULATION",
                         self$stats$n.diab.hyp.trt[age,sex,hiv,ncd,as.character(self$params$CYNOW)] <- 
                           self$stats$n.diab.hyp.trt[age,sex,hiv,ncd,as.character(self$params$CYNOW)]+1
                       },
+                      # record ncd trt dropouts
+                      record.diab.trt.dropout=function(age,sex,hiv,ncd){
+                        self$stats$n.diab.trt.dropout[age,sex,hiv,ncd,as.character(self$params$CYNOW)] <- 
+                          self$stats$n.diab.trt.dropout[age,sex,hiv,ncd,as.character(self$params$CYNOW)]+1
+                      },
+                      record.hyp.trt.dropout=function(age,sex,hiv,ncd){
+                        self$stats$n.hyp.trt.dropout[age,sex,hiv,ncd,as.character(self$params$CYNOW)] <- 
+                          self$stats$n.hyp.trt.dropout[age,sex,hiv,ncd,as.character(self$params$CYNOW)]+1
+                      },
+                      record.diab.hyp.trt.dropout=function(age,sex,hiv,ncd){
+                        self$stats$n.diab.hyp.trt.dropout[age,sex,hiv,ncd,as.character(self$params$CYNOW)] <- 
+                          self$stats$n.diab.hyp.trt.dropout[age,sex,hiv,ncd,as.character(self$params$CYNOW)]+1
+                      },
                       
                       #record deaths
                       record.deaths.hiv=function(age,sex,hiv,ncd){

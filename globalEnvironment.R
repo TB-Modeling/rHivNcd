@@ -41,11 +41,7 @@ DEATH.NATURAL=1
 DEATH.HIV=2
 DEATH.STROKE=3
 DEATH.MI=4
-#
-NCDTRT.NONE=1
-NCDTRT.DIAB=2
-NCDTRT.HYP=3
-NCDTRT.DIABHYP=4
+
 
 DIM.NAMES.SEX=c("FEMALE","MALE")
 DIM.NAMES.AGE=c("0-4","5-9","10-14","15-19", "20-24","25-29","30-34","35-39","40-44","45-49","50-54","55-59",
@@ -345,6 +341,11 @@ generate.new.stat<-function(rep=0,
     n.diab.trt=v5temp,
     n.hyp.trt=v5temp,
     n.diab.hyp.trt=v5temp,
+    
+    #ncd trt dropouts
+    n.diab.trt.dropout=v5temp,
+    n.hyp.trt.dropout=v5temp,
+    n.diab.hyp.trt.dropout=v5temp,
     
     
     ## STATE SIZES ##
