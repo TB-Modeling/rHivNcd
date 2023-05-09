@@ -41,14 +41,14 @@ read.ncd.simset = function(){
       files=list.files(OUTPUTS.DIR)
       file = files[endsWith(files,paste0("ncd",scenario,"-rep",rep))]
       
-      tryCatch({    # if this code triggers an error, it will evaluate to NA 
+   #   tryCatch({    # if this code triggers an error, it will evaluate to NA 
         stats<-readRDS(paste0(OUTPUTS.DIR,file))
         
         print(paste0("reading ",OUTPUTS.DIR,"popStats-",scenario,"-rep",rep, " for the ncd model"))
         temp.simset.ncd[[rep]] <<- stats
         
         return(temp.simset.ncd)
-      }, error=function(e){NA})
+    #  }, error=function(e){NA})
       
 
     }))

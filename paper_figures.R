@@ -10,7 +10,8 @@ source("plots_simplified.R")
 START.YEAR=2015
 INT.START.YEAR=2023
 INT.END.YEAR=2030
-END.YEAR=2030 #you can alternatively set this to 2040
+END.YEAR=2040 #you can alternatively set this to 2040
+n.trt.years = (END.YEAR+1)-INT.START.YEAR
 
 SCENARIOS = c(1:7)
 HIV.SCENARIOS = c("noint", # NCD scen 1
@@ -21,60 +22,34 @@ HIV.SCENARIOS = c("noint", # NCD scen 1
                   "tsteng",  # NCD scen 6
                   "comp"  # NCD scen 7
 )
-REPLICATIONS = c(1:100) # reset after I've subsetting to 4 only 
+REPLICATIONS = c(1:100) 
 n.reps=length(REPLICATIONS)
-OUTPUTS.DIR = "outputs/05-09/"
+OUTPUTS.DIR = "~/Library/CloudStorage/OneDrive-JohnsHopkins/MELISSA/Model/rHivNcd/outputs/0509/"
 
 ncd.simset=read.ncd.simset()
-ncd.simset[[1]] = list(ncd.simset[[1]][[3]],
-                       ncd.simset[[1]][[5]],
-                       ncd.simset[[1]][[6]],
-                       ncd.simset[[1]][[7]])
-ncd.simset[[2]] = list(ncd.simset[[2]][[1]],
-                       ncd.simset[[2]][[5]],
-                       ncd.simset[[2]][[7]],
-                       ncd.simset[[2]][[10]])
-ncd.simset[[3]] = list(ncd.simset[[3]][[10]],
-                       ncd.simset[[3]][[20]],
-                       ncd.simset[[3]][[27]],
-                       ncd.simset[[3]][[42]])
-ncd.simset[[4]] = list(ncd.simset[[4]][[10]],
-                       ncd.simset[[4]][[20]],
-                       ncd.simset[[4]][[42]],
-                       ncd.simset[[4]][[43]])
-ncd.simset[[5]] = list(ncd.simset[[5]][[4]],
-                       ncd.simset[[5]][[16]],
-                       ncd.simset[[5]][[26]],
-                       ncd.simset[[5]][[42]])
-ncd.simset[[6]] = list(ncd.simset[[6]][[1]],
-                       ncd.simset[[6]][[3]],
-                       ncd.simset[[6]][[8]],
-                       ncd.simset[[6]][[16]])
-ncd.simset[[7]] = list(ncd.simset[[7]][[3]],
-                       ncd.simset[[7]][[12]],
-                       ncd.simset[[7]][[16]],
-                       ncd.simset[[7]][[19]])
 khm.simset.full = read.khm.simset.full()
 
-results.array.cumulative = generate.cumulative.events.results.array(ncd.simset,n.reps=4)
-
-results.array.annual = generate.annual.events.results.array(ncd.simset,n.reps=4) 
+results.array.cumulative = generate.cumulative.events.results.array(ncd.simset,n.reps=n.reps,
+                                                                    years=as.character(c(INT.START.YEAR:END.YEAR)))
+results.array.annual = generate.annual.events.results.array(ncd.simset,n.reps=n.reps,
+                                                            years = as.character(c(START.YEAR:(END.YEAR)))) 
 
 
 ## Figures for paper 
-reps = c(1:4)
+reps = REPLICATIONS
 interventions = paste0("scen_",SCENARIOS)
-years = as.character(c(2022:2030))
+years = as.character(c(2022:2040))
 
 ## Figure 1: Calibration to HIV model – population size by HIV 
 jpeg(file=paste0("plots/for_paper/Fig1.jpeg"), width = 2500,height = 1500,res=200)
-simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "population",facet.by = "hiv.status",scale.population = T)
+simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "population",facet.by = "hiv.status",scale.population = T,
+        years = as.character(2015:2040))
 dev.off()
 
 ## Figure 2: NCD burden over time, no interventions (by disease/comorbidity type); 
-hyp.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "hyp.prev", combine.comorbidity = T)
-diab.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "diab.prev", combine.comorbidity = T)
-diab.hyp.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "diab.hyp.prev", combine.comorbidity = F)
+hyp.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "hyp.prev", combine.comorbidity = T,years = as.character(2015:2040))
+diab.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "diab.prev", combine.comorbidity = T,years = as.character(2015:2040))
+diab.hyp.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "diab.hyp.prev", combine.comorbidity = F,years = as.character(2015:2040))
   
 jpeg(file=paste0("plots/for_paper/Fig2.jpeg"), width = 2500,height = 1000,res=200)
 grid.arrange(hyp.prev, diab.prev, diab.hyp.prev, ncol=3)  
@@ -102,7 +77,7 @@ df.hiv.coverage = reshape2::melt(hiv.treatment.coverage.median)
 
 jpeg(file=paste0("plots/for_paper/Fig3A.jpeg"), width = 1000,height = 500,res=200)
 ggplot(df.hiv.coverage, aes(color=intervention, y=value, x=year)) + 
-  geom_line() + ylim(0,NA)
+  geom_line() + ylim(0,NA) 
 dev.off()
 
 
@@ -136,12 +111,10 @@ dev.off()
 jpeg(file=paste0("plots/for_paper/Fig3D.jpeg"), width = 1000,height = 500,res=200)
 plot.cumulative.outcome.boxplot(ncd.simset[[1]],ncd.simset[[2]],ncd.simset[[3]],
                                 ncd.simset[[4]],ncd.simset[[5]],ncd.simset[[6]],ncd.simset[[7]],
-                                data.types=c("n.cvd.events"),dimension="total",n.reps = n.reps) 
+                                data.types=c("n.cvd.events"),dimension="total",n.reps = n.reps) +ylim(10000,NA)
 
 dev.off()
 
-# plot.cumulative.outcome.boxplot(ncd.simset[[5]],ncd.simset[[6]],ncd.simset[[7]],
-#                                 data.types=c("n.cvd.events"),dimension="total") + ylim(4000,NA)
 
 ## (E) HIV deaths
 jpeg(file=paste0("plots/for_paper/Fig3E.jpeg"), width = 1000,height = 500,res=200)
@@ -154,16 +127,14 @@ dev.off()
 jpeg(file=paste0("plots/for_paper/Fig3F.jpeg"), width = 1000,height = 500,res=200)
 plot.cumulative.outcome.boxplot(ncd.simset[[1]],ncd.simset[[2]],ncd.simset[[3]],
                                 ncd.simset[[4]],ncd.simset[[5]],ncd.simset[[6]],ncd.simset[[7]],
-                                data.types=c("n.deaths.cvd"),dimension="total",n.reps = n.reps) 
+                                data.types=c("n.deaths.cvd"),dimension="total",n.reps = n.reps) + ylim(5000,NA)
 dev.off()
 
 # plot.cumulative.outcome.boxplot(ncd.simset[[5]],ncd.simset[[6]],ncd.simset[[7]],
-#                                 data.types=c("n.deaths.cvd"),dimension="total") + ylim(1500,NA)
+#                                 data.types=c("n.deaths.cvd"),dimension="total") + ylim(5000,NA)
 
 
 ## Figure 4: Reduction per # on treatment 
-ncd.on.treatment.cumulative = apply(ncd.on.treatment.annual,c("rep","intervention"),sum)
-
 mi.events.cumulative = apply(results.array.cumulative[,,,,"n.mi.inc",,],c("rep","intervention"),sum)
 stroke.events.cumulative = apply(results.array.cumulative[,,,,"n.stroke.inc",,],c("rep","intervention"),sum)
 cvd.events.cumulative = mi.events.cumulative + stroke.events.cumulative
@@ -211,22 +182,28 @@ reduction.in.cumulative.deaths = array(c(reduction.in.cumulative.deaths.2,
 
 
 ## (A) - person-time on treatment - cumulative/# years (8)
+ncd.on.treatment.cumulative = apply(ncd.on.treatment.annual,c("rep","intervention"),sum)
 dimnames(ncd.on.treatment.cumulative)[2] = list(intervention=interventions)
+#ncd.on.treatment.cumulative=ncd.on.treatment.cumulative[,c(1,5:7)]
 
-
-trt.df = reshape2::melt(ncd.on.treatment.cumulative[,-1]/8)
+trt.df = reshape2::melt(ncd.on.treatment.cumulative[,-1]/n.trt.years)
 
 jpeg(file=paste0("plots/for_paper/Fig4A.jpeg"), width = 1000,height = 500,res=200)
 ggplot(trt.df, aes(x=intervention, y=value, fill=intervention)) + 
   geom_boxplot()+ ylim(0,NA)
 dev.off()
 
+# jpeg(file=paste0("plots/for_paper/Fig4A.2.jpeg"), width = 1000,height = 500,res=200)
+# ggplot(trt.df, aes(x=intervention, y=value, fill=intervention)) + 
+#   geom_boxplot()+ ylim(20000,NA)
+# dev.off()
+
 
 
 ## (B) - reduction in events 
-reduction.in.events.per.trt = (reduction.in.cumulative.events/(ncd.on.treatment.cumulative[,-1]/8))*10000 # per 10,000?
+reduction.in.events.per.trt = (reduction.in.cumulative.events/(ncd.on.treatment.cumulative[,-1]/n.trt.years))*10000 # per 10,000?
 # reduction.in.events.per.trt = (reduction.in.cumulative.events/(ncd.on.treatment.annual["2030",,-1]))*10000
-# reduction.in.events.per.trt=reduction.in.events.per.trt[,2:3]
+#reduction.in.events.per.trt=reduction.in.events.per.trt[,1:3]
 # reduction.in.events.per.trt=reduction.in.events.per.trt[,4:6]
 redux.events.df = reshape2::melt(reduction.in.events.per.trt)
 
@@ -236,12 +213,16 @@ ggplot(redux.events.df, aes(x=intervention, y=value, fill=intervention)) +
   geom_boxplot() #+ ylim(0,NA)
 dev.off()
 
-
+# jpeg(file=paste0("plots/for_paper/Fig4B.2.jpeg"), width = 1000,height = 500,res=200)
+# ggplot(redux.events.df, aes(x=intervention, y=value, fill=intervention)) + 
+#   geom_boxplot() #+ ylim(0,NA)
+# dev.off()
 
 
 
 ## (C) - reduction in deaths
-reduction.in.deaths.per.trt = (reduction.in.cumulative.deaths/(ncd.on.treatment.cumulative[,-1]/8))*10000
+reduction.in.deaths.per.trt = (reduction.in.cumulative.deaths/(ncd.on.treatment.cumulative[,-1]/n.trt.years))*10000
+#reduction.in.deaths.per.trt=reduction.in.deaths.per.trt[,1:3]
 #reduction.in.deaths.per.trt=reduction.in.deaths.per.trt[,4:6]
 redux.deaths.df = reshape2::melt(reduction.in.deaths.per.trt)
 
@@ -250,6 +231,10 @@ ggplot(redux.deaths.df, aes(x=intervention, y=value, fill=intervention)) +
   geom_boxplot() #+ ylim(0,NA)
 dev.off()
 
+# jpeg(file=paste0("plots/for_paper/Fig4C.2.jpeg"), width = 1000,height = 500,res=200)
+# ggplot(redux.deaths.df, aes(x=intervention, y=value, fill=intervention)) +
+#   geom_boxplot() #+ ylim(0,NA)
+# dev.off()
 
 ## VALUES FOR FIGURE 3 ## 
 # HIV inc
@@ -263,6 +248,7 @@ cumulative.cvd.inc = apply(results.array.cumulative[,,,,c("n.mi.inc","n.stroke.i
 cumulative.cvd.inc = apply(cumulative.cvd.inc,c("intervention"),median)
 dim(cumulative.cvd.inc) = length(interventions)
 dimnames(cumulative.cvd.inc) = list(intervention = interventions)
+cumulative.cvd.inc # this matches the median in the plots 
 
 # HIV deaths
 cumulative.hiv.deaths = apply(results.array.cumulative[,,,,c("n.deaths.hiv"),,],c("rep","intervention"),sum)
@@ -283,13 +269,14 @@ dimnames(cumulative.cvd.deaths) = list(intervention = interventions)
 ## OTHER DEBUGGING/PLOTTING 
 apply(reduction.in.cumulative.events,2,median) # the jump in event reduction from 3-4 is decent
 apply(reduction.in.cumulative.deaths,2,median) # the jump in event reduction from 3-4 is decent
-apply((ncd.on.treatment.cumulative[,-1]/8),2,median) # but you are also treating a lot more people
+apply((ncd.on.treatment.cumulative[,-1]/n.trt.years),2,median) # but you are also treating a lot more people
 
-10000*apply(reduction.in.cumulative.events,2,median)/apply((ncd.on.treatment.cumulative[,-1]/8),2,median)
+10000*apply(reduction.in.cumulative.events,2,median)/apply((ncd.on.treatment.cumulative[,-1]/n.trt.years),2,median)
 
 apply(reduction.in.events.per.trt,2,median)
 apply(reduction.in.deaths.per.trt,2,median)
 
 apply(cvd.events.cumulative,2,median)
-apply((ncd.on.treatment.cumulative[,-1]/8),2,median)
+cumulative.cvd.inc
+apply((ncd.on.treatment.cumulative[,-1]/n.trt.years),2,median)
 
