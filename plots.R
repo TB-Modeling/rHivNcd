@@ -303,6 +303,14 @@ simplot = function(..., # can pass any combination of single simulations or full
                                "sex"=sexes)
               dim(value) = sapply(dim.names,length)
               dimnames(value) = dim.names
+            } else if (setequal(keep.dimensions, c('year','age','hiv.status'))){
+              if(!all(keep.dimensions==c("year","age","hiv.status")))
+                stop("keep.dimensions must be in the order: year, age, hiv.status")
+              dim.names = list("year"=years,
+                               "age"=ages,
+                               "hiv.status"=hiv.status)
+              dim(value) = sapply(dim.names,length)
+              dimnames(value) = dim.names
             } else stop("Need to add these dimensions")
           }
         }
@@ -401,6 +409,14 @@ simplot = function(..., # can pass any combination of single simulations or full
               dim.names = list("year"=years,
                                "age"=ages,
                                "sex"=sexes)
+              dim(value) = sapply(dim.names,length)
+              dimnames(value) = dim.names
+            } else if (setequal(keep.dimensions, c('year','age','hiv.status'))){
+              if(!all(keep.dimensions==c("year","age","hiv.status")))
+                stop("keep.dimensions must be in the order: year, age, hiv.status")
+              dim.names = list("year"=years,
+                               "age"=ages,
+                               "hiv.status"=hiv.status)
               dim(value) = sapply(dim.names,length)
               dimnames(value) = dim.names
             } else stop("Need to add these dimensions")
