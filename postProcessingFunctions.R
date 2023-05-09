@@ -118,7 +118,7 @@ read.khm.simset.full = function(){
 generate.annual.results = function(simset,
                                    data.type,
                                    n.reps,
-                                   years=as.character(c(START.YEAR:(END.YEAR+1))),
+                                   years=as.character(c(START.YEAR:(END.YEAR))),
                                    summary.statistic="median"){
   
   simset = simset[1:n.reps]
@@ -353,7 +353,7 @@ generate.annual.events.results.array = function(simset.list,
                                                 sexes = DIM.NAMES.SEX,
                                                 hiv.status = DIM.NAMES.HIV,
                                                 ncd.status = DIM.NAMES.NCD,
-                                                years = as.character(c(START.YEAR:(END.YEAR+1))),
+                                                years = as.character(c(START.YEAR:(END.YEAR))),
                                                 outcomes = c("n.state.sizes",
                                                              "n.hiv.eng","n.hyp.trt","n.diab.trt","n.diab.hyp.trt",
                                                              "n.hiv.inc","n.mi.inc","n.stroke.inc",
