@@ -184,12 +184,10 @@ PERSON<-R6Class("PERSON",
                     self$ncdState=NCD.DIAB_HYP.TRT
                     self$tDiabHypTrt=tnow
                   },
-                  model.ncd.trt.dropout=function(pDropOut){
-                    if(runif(1)<pDropOut){
+                  model.ncd.trt.dropout=function(){
                       if (self$ncdState==NCD.DIAB.TRT) self$ncdState=NCD.DIAB
                       if (self$ncdState==NCD.HYP.TRT) self$ncdState=NCD.HYP
                       if (self$ncdState==NCD.DIAB_HYP.TRT) self$ncdState=NCD.DIAB_HYP
-                    }
                   }
                   
                 ),
