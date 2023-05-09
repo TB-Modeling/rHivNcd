@@ -21,7 +21,7 @@ HIV.SCENARIOS = c("noint", # NCD scen 1
                   "tsteng",  # NCD scen 6
                   "comp"  # NCD scen 7
 )
-REPLICATIONS = c(1:4)
+REPLICATIONS = c(1:100) # reset after I've subsetting to 4 only 
 n.reps=length(REPLICATIONS)
 OUTPUTS.DIR = "outputs/05-09/"
 

@@ -373,7 +373,7 @@ generate.annual.events.results.array = function(simset.list,
                         intervention = interventions)
   
   rv = sapply(simset.list, function(simset){
-    sapply(reps, function(rep){
+    sapply(1:length(reps), function(rep){
       sapply(outcomes, function(x){
         
         simset[[rep]][[x]][ages,sexes,hiv.status,ncd.status,as.character(years)]
