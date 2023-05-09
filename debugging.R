@@ -217,3 +217,10 @@ dev.off()
 # session_time=end_time - start_time
 # print(paste("Session time=",session_time))
 # write.table(x = session_time,file = "outputs/out-sessionTime",col.names = F,row.names = F)
+
+
+pop<-readRDS("outputs/popStats-node0-ncd7-rep1")
+dimnames(pop$n.ncd.screened)
+apply(pop$n.ncd.screened,c("year"),sum)
+apply(pop$n.hyp.trt,c("year"),sum)
+apply(pop$n.state.sizes,c("ncd.status","year"),sum)

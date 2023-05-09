@@ -779,7 +779,16 @@ model.ncd.intervention<-function(pop,
     
     # model drop outs
     invisible(lapply(pop$members,function(p){
-      if(p$ncdState>4) p$model.ncd.trt.dropout(pDropOut)
+      if(p$ncdState>4) {
+        if (runif(1)<pDropOut){
+        #record stats
+        if (p$ncdState==NCD.DIAB.TRT) pop$record.diab.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+        if (p$ncdState==NCD.HYP.TRT) pop$record.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+        if (p$ncdState==NCD.DIAB_HYP.TRT) pop$record.diab.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+        #model dropout
+        p$model.ncd.trt.dropout()
+        }}
+      
     }))
     
     # model new enrollments?

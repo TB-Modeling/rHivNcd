@@ -1,3 +1,8 @@
+START.YEAR=2014
+INT.START.YEAR=2023
+INT.END.YEAR=2030
+END.YEAR=2030 #you can alternatively set this to 2040
+
 # Functions: 
 # 1. read.ncd.simset()
 # 2. read.khm.simset()
@@ -108,7 +113,7 @@ read.khm.simset.full = function(){
 generate.annual.results = function(simset,
                                    data.type,
                                    n.reps,
-                                   years=as.character(c(2014:2031)),
+                                   years=as.character(c(START.YEAR:(END.YEAR+1))),
                                    summary.statistic="median"){
   
   simset = simset[1:n.reps]
@@ -134,7 +139,7 @@ generate.annual.results = function(simset,
 
 generate.cumulative.results = function(simset,
                                        data.type,
-                                       years=as.character(c(2023:2030)),
+                                       years=as.character(c(INT.START.YEAR:END.YEAR)),
                                        n.reps,
                                        summary.statistic="median"){
   
@@ -164,7 +169,7 @@ generate.cumulative.results = function(simset,
 
 plot.cumulative.outcome = function(simset.1,
                                    simset.2,
-                                   years=as.character(c(2023:2030)),
+                                   years=as.character(c(INT.START.YEAR:END.YEAR)),
                                    data.type,
                                    dimension){
   
@@ -198,7 +203,7 @@ plot.cumulative.outcome = function(simset.1,
 
 plot.cumulative.outcome.boxplot = function(...,
                                            data.types,
-                                           years=as.character(c(2023:2030)),
+                                           years=as.character(c(INT.START.YEAR:END.YEAR)),
                                            dimension,
                                            facet.by=NULL,
                                            n.reps=100){
@@ -300,7 +305,7 @@ plot.cumulative.outcome.boxplot = function(...,
 
 generate.cumulative.events.results.array = function(simset.list,
                                          n.reps,
-                                         years=as.character(c(2023:2040)),
+                                         years=as.character(c(INT.START.YEAR:END.YEAR)),
                                          ages = DIM.NAMES.AGE,
                                          sexes = DIM.NAMES.SEX,
                                          hiv.status = DIM.NAMES.HIV,
