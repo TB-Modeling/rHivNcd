@@ -30,7 +30,8 @@ simplot.ncd.prevalence.baseline = function(...,
                                          ages = DIM.NAMES.AGE, 
                                          sexes = DIM.NAMES.SEX,
                                          hiv.status = DIM.NAMES.HIV,
-                                         ncd.status = DIM.NAMES.NCD
+                                         ncd.status = DIM.NAMES.NCD,
+                                         show.treated=F
 ){
   
   sims = list(...)
@@ -89,8 +90,18 @@ simplot.ncd.prevalence.baseline = function(...,
         if(data.type=="hyp.prev"){
           ncd.status="NCD.HYP" 
           
-          if(combine.comorbidity) 
+          if(show.treated){
+            ncd.status=c("NCD.HYP","NCD.HYP.TRT")
+          }
+          
+          if(combine.comorbidity) {
             ncd.status=c("NCD.HYP","NCD.DIAB_HYP") # NO TRT: ONLY HYP AND DIAB_HYP
+            
+            if(show.treated){
+              ncd.status=c("NCD.HYP","NCD.DIAB_HYP","NCD.HYP.TRT","NCD.DIAB_HYP.TRT")
+            }
+          }
+            
           
           # DIABETES PREVALENCE
         } 
@@ -98,8 +109,18 @@ simplot.ncd.prevalence.baseline = function(...,
         if(data.type=="diab.prev"){
           ncd.status="NCD.DIAB"
           
-          if(combine.comorbidity)
+          if(show.treated){
+            ncd.status=c("NCD.DIAB","NCD.DIAB.TRT")
+          }
+          
+          if(combine.comorbidity){
             ncd.status=c("NCD.DIAB","NCD.DIAB_HYP")
+            
+            if(show.treated){
+              ncd.status=c("NCD.DIAB","NCD.DIAB_HYP","NCD.DIAB.TRT","NCD.DIAB_HYP.TRT")
+            }
+          }
+            
           
           
           # COMBINED PREVALENCE 
@@ -107,6 +128,10 @@ simplot.ncd.prevalence.baseline = function(...,
         
         if(data.type=="diab.hyp.prev"){
           ncd.status="NCD.DIAB_HYP"
+          
+          if(show.treated){
+            ncd.status=c("NCD.DIAB_HYP","NCD.DIAB_HYP.TRT")
+          }
         }
         
         # note that ncd.status or hiv.status may have been overwritten from whatever was specified in the arguments

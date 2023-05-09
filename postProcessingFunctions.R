@@ -37,15 +37,20 @@ read.ncd.simset = function(){
     
     invisible(lapply(REPLICATIONS,function(rep){
       # change this to read in only the stats list
+      
       files=list.files(OUTPUTS.DIR)
       file = files[endsWith(files,paste0("ncd",scenario,"-rep",rep))]
       
-      stats<-readRDS(paste0(OUTPUTS.DIR,file))
+      tryCatch({    # if this code triggers an error, it will evaluate to NA 
+        stats<-readRDS(paste0(OUTPUTS.DIR,file))
+        
+        print(paste0("reading ",OUTPUTS.DIR,"popStats-",scenario,"-rep",rep, " for the ncd model"))
+        temp.simset.ncd[[rep]] <<- stats
+        
+        return(temp.simset.ncd)
+      }, error=function(e){NA})
       
-      print(paste0("reading ",OUTPUTS.DIR,"popStats-",scenario,"-rep",rep, " for the ncd model"))
-      temp.simset.ncd[[rep]] <<- stats
-      
-      return(temp.simset.ncd)
+
     }))
 
     ncd.simset[[scenario]]<<-temp.simset.ncd # if still using scenario 0; make this scenario + 1
@@ -113,7 +118,7 @@ read.khm.simset.full = function(){
 generate.annual.results = function(simset,
                                    data.type,
                                    n.reps,
-                                   years=as.character(c(START.YEAR:(END.YEAR+1))),
+                                   years=as.character(c(START.YEAR:(END.YEAR))),
                                    summary.statistic="median"){
   
   simset = simset[1:n.reps]
@@ -327,7 +332,7 @@ generate.cumulative.events.results.array = function(simset.list,
                         intervention = interventions)
   
   rv = sapply(simset.list, function(simset){
-    sapply(reps, function(rep){
+    sapply(1:length(reps), function(rep){
       sapply(outcomes, function(x){
         
         apply(simset[[rep]][[x]][,,,,years], c(1:4), sum)
@@ -348,7 +353,7 @@ generate.annual.events.results.array = function(simset.list,
                                                 sexes = DIM.NAMES.SEX,
                                                 hiv.status = DIM.NAMES.HIV,
                                                 ncd.status = DIM.NAMES.NCD,
-                                                years = DIM.NAMES.YEAR,
+                                                years = as.character(c(START.YEAR:(END.YEAR))),
                                                 outcomes = c("n.state.sizes",
                                                              "n.hiv.eng","n.hyp.trt","n.diab.trt","n.diab.hyp.trt",
                                                              "n.hiv.inc","n.mi.inc","n.stroke.inc",
@@ -368,7 +373,7 @@ generate.annual.events.results.array = function(simset.list,
                         intervention = interventions)
   
   rv = sapply(simset.list, function(simset){
-    sapply(reps, function(rep){
+    sapply(1:length(reps), function(rep){
       sapply(outcomes, function(x){
         
         simset[[rep]][[x]][ages,sexes,hiv.status,ncd.status,as.character(years)]
