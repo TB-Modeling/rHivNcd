@@ -74,7 +74,7 @@ print("Sourcing dependencies")
 }
 
 {
-  vReps=c(1:10) #vector of reps 
+  vReps=c(1:100) #vector of reps 
   vNcdScenarios=c(1,7) #specific NCD scenarios to run
   vSaScenarios=c(1:length(saScenarios)) #vector of sa scenario ids
   #
