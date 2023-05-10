@@ -238,45 +238,34 @@ dev.off()
 
 ## VALUES FOR FIGURE 3 ## 
 # HIV inc
-cumulative.hiv.inc = apply(results.array.cumulative[,,,,"n.hiv.inc",,],c("rep","intervention"),sum)
-cumulative.hiv.inc = apply(cumulative.hiv.inc,c("intervention"),median)
-dim(cumulative.hiv.inc) = length(interventions)
-dimnames(cumulative.hiv.inc) = list(intervention = interventions)
+hiv.inc.cumulative = apply(results.array.cumulative[,,,,"n.hiv.inc",,],c("rep","intervention"),sum)
+hiv.inc.cumulative.summary = apply(hiv.inc.cumulative,c("intervention"),median)
+dim(hiv.inc.cumulative.summary) = length(interventions)
+dimnames(hiv.inc.cumulative.summary) = list(intervention = interventions)
 
 # CVD inc
-cumulative.cvd.inc = apply(results.array.cumulative[,,,,c("n.mi.inc","n.stroke.inc"),,],c("rep","intervention"),sum)
-cumulative.cvd.inc = apply(cumulative.cvd.inc,c("intervention"),median)
-dim(cumulative.cvd.inc) = length(interventions)
-dimnames(cumulative.cvd.inc) = list(intervention = interventions)
-cumulative.cvd.inc # this matches the median in the plots 
+cvd.events.cumulative.summary = apply(cvd.events.cumulative,c("intervention"),median)
+dim(cvd.events.cumulative.summary) = length(interventions)
+dimnames(cvd.events.cumulative.summary) = list(intervention = interventions)
+cvd.events.cumulative.summary # this matches the median in the plots 
 
 # HIV deaths
-cumulative.hiv.deaths = apply(results.array.cumulative[,,,,c("n.deaths.hiv"),,],c("rep","intervention"),sum)
-cumulative.hiv.deaths = apply(cumulative.hiv.deaths,c("intervention"),median)
-dim(cumulative.hiv.deaths) = length(interventions)
-dimnames(cumulative.hiv.deaths) = list(intervention = interventions)
+hiv.deaths.cumulative = apply(results.array.cumulative[,,,,c("n.deaths.hiv"),,],c("rep","intervention"),sum)
+hiv.deaths.cumulative.summary = apply(hiv.deaths.cumulative,c("intervention"),median)
+dim(hiv.deaths.cumulative.summary) = length(interventions)
+dimnames(hiv.deaths.cumulative.summary) = list(intervention = interventions)
 
-# CVD deaths
-cumulative.cvd.deaths = apply(results.array.cumulative[,,,,c("n.deaths.cvd"),,],c("rep","intervention"),sum)
-cumulative.cvd.deaths = apply(cumulative.cvd.deaths,c("intervention"),median)
-dim(cumulative.cvd.deaths) = length(interventions)
-dimnames(cumulative.cvd.deaths) = list(intervention = interventions)
+# CVD deaths 
+cvd.deaths.cumulative.summary = apply(cvd.deaths.cumulative,c("intervention"),median)
+dim(cvd.deaths.cumulative.summary) = length(interventions)
+dimnames(cvd.deaths.cumulative.summary) = list(intervention = interventions)
 
+# Reduction in events 
+redux.events.summary = apply(reduction.in.cumulative.events,2,median)
 
+# Reduction in deaths 
+redux.deaths.summary = apply(reduction.in.cumulative.deaths,2,median)
 
-
-
-## OTHER DEBUGGING/PLOTTING 
-apply(reduction.in.cumulative.events,2,median) # the jump in event reduction from 3-4 is decent
-apply(reduction.in.cumulative.deaths,2,median) # the jump in event reduction from 3-4 is decent
-apply((ncd.on.treatment.cumulative[,-1]/n.trt.years),2,median) # but you are also treating a lot more people
-
-10000*apply(reduction.in.cumulative.events,2,median)/apply((ncd.on.treatment.cumulative[,-1]/n.trt.years),2,median)
-
-apply(reduction.in.events.per.trt,2,median)
-apply(reduction.in.deaths.per.trt,2,median)
-
-apply(cvd.events.cumulative,2,median)
-cumulative.cvd.inc
-apply((ncd.on.treatment.cumulative[,-1]/n.trt.years),2,median)
+# Number treated
+number.treated.summary = apply((ncd.on.treatment.cumulative[,-1]/n.trt.years),2,median)
 

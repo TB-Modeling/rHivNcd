@@ -36,7 +36,6 @@ read.ncd.simset = function(){
     temp.simset.ncd = vector("list",length(REPLICATIONS))
     
     invisible(lapply(REPLICATIONS,function(rep){
-      # change this to read in only the stats list
       
       files=list.files(OUTPUTS.DIR)
       file = files[endsWith(files,paste0("ncd",scenario,"-rep",rep))]
@@ -59,6 +58,52 @@ read.ncd.simset = function(){
   }))
   
   ncd.simset
+}
+
+read.ncd.simset.sa = function(sa.scenarios = SA.SCENARIOS,
+                              reps.for.sa = REPS.FOR.SA){
+  
+  ncd.sa.simset=vector("list",2)
+  ncd.scenario.names = c(1,7)
+  
+  invisible(lapply(c(1:2), function(n){ # just coding 1:2 manually here...
+    
+    ncd.scenario.name = ncd.scenario.names[n]
+    
+    temp.simset.sa = vector("list", length(sa.scenarios))
+    
+    invisible(lapply(sa.scenarios,function(sa.scenario){
+      
+      temp.simset.rep = vector("list",length(reps.for.sa))
+      
+      invisible(lapply(reps.for.sa,function(rep){
+        
+        files=list.files(SA.DIR)
+        files = files[grepl("Stats",files)]
+        file = files[endsWith(files,paste0("sa",sa.scenario,"-ncd",ncd.scenario.name,"-rep",rep))]
+        
+        stats<-readRDS(paste0(SA.DIR,file))
+        
+        print(paste0("reading ",file, " for sensitivity analysis"))
+        temp.simset.rep[[rep]] <<- stats
+        
+        return(temp.simset.rep)
+        
+      }))
+
+      temp.simset.sa[[sa.scenario]]<<-temp.simset.rep
+      rm(temp.simset.rep)
+      
+    }))
+    
+    ncd.sa.simset[[n]]<<-temp.simset.sa 
+    rm(temp.simset.sa)
+    
+    return(ncd.sa.simset)
+    
+  }))
+  
+  ncd.sa.simset
 }
 
 # KHM SIMSET: List of length (7), where each element is a scenario; 
