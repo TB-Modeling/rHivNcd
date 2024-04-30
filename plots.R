@@ -120,7 +120,8 @@ simplot = function(..., # can pass any combination of single simulations or full
                    ages = DIM.NAMES.AGE, 
                    sexes = DIM.NAMES.SEX,
                    hiv.status = DIM.NAMES.HIV,
-                   ncd.status = DIM.NAMES.NCD
+                   ncd.status = DIM.NAMES.NCD,
+                   Fig.1=F
 ){
   
   sims = list(...)
@@ -157,6 +158,8 @@ simplot = function(..., # can pass any combination of single simulations or full
   
     if(class(sim)!="khm_simulation_output"){
       
+      plot.label = "Individual-based NCD simulation"
+      
       if("stats" %in% names(sim)){ # if this is a single simulation, need to make it a list with one element
         sim=sims[[i]]
       }
@@ -171,7 +174,7 @@ simplot = function(..., # can pass any combination of single simulations or full
         if(data.type %in% c("hiv.incidence","mi.inc","stroke.inc",
                             "hyp.inc","diab.inc","diab.hyp.inc",
                             "hiv.mortality","non.hiv.mortality","cvd.mortality")){
-          value = filter.5D.stats.by.field(sim[[j]]$stats[[ncd.data.type.x]], 
+          value = filter.5D.stats.by.field(sim[[j]][[ncd.data.type.x]], 
                                            years = years,
                                            ages = ages, 
                                            sexes = sexes,
@@ -278,6 +281,10 @@ simplot = function(..., # can pass any combination of single simulations or full
             } else if (setequal(keep.dimensions, c('year','hiv.status'))){
               dimnames(value) = list(year=years,
                                      hiv.status=hiv.status)
+              if(Fig.1){
+                dimnames(value) = list(year=years,
+                                       hiv.status=c("HIV negative","Undiagnosed","Unengaged","Engaged"))
+              }
             } else if (setequal(keep.dimensions, c('year','ncd.status'))){
               dimnames(value) = list(year=years,
                                      ncd.status=ncd.status)
@@ -319,7 +326,7 @@ simplot = function(..., # can pass any combination of single simulations or full
         
         # set up a dataframe with columns: year, value, sim id, data.type 
         one.df = reshape2::melt(value) 
-        one.df$sim.id = i
+        one.df$sim.id = plot.label
         one.df$sim.number = j 
         # one.df$data.type = d
         
@@ -333,6 +340,8 @@ simplot = function(..., # can pass any combination of single simulations or full
       
       # HIV SIMSET OBJECT OR INDIVIDUAL HIV SIMULATION
     } else {
+      
+      plot.label = "Compartmental HIV model"
       
       if("ncd.status" %in% keep.dimensions)
         stop("Can only facet.by ncd status for NCD model")
@@ -370,7 +379,7 @@ simplot = function(..., # can pass any combination of single simulations or full
 
         # For scale.population, divide by 2015 population size - have to do this separately for each combo of keep.dimensions
         if(scale.population){
-          
+
           # Keep dimensions = year only 
           if(setequal(keep.dimensions,"year")){
             value = value/value[years==scale.to.year]
@@ -391,6 +400,10 @@ simplot = function(..., # can pass any combination of single simulations or full
             } else if (setequal(keep.dimensions, c('year','hiv.status'))){
               dimnames(value) = list(year=years,
                                      hiv.status=hiv.status)
+              if(Fig.1){
+                dimnames(value) = list(year=years,
+                                       hiv.status=c("HIV negative","Undiagnosed","Unengaged","Engaged"))
+              }
             } else stop("Need to add these dimensions")
             
             
@@ -439,7 +452,7 @@ simplot = function(..., # can pass any combination of single simulations or full
         
         # set up a dataframe with columns: year, value, sim id, data.type 
         one.df = reshape2::melt(value) 
-        one.df$sim.id = i
+        one.df$sim.id = plot.label
         one.df$sim.number = j
         # one.df$data.type = d
         
@@ -474,8 +487,7 @@ simplot = function(..., # can pass any combination of single simulations or full
       data.type.label = data.type
   }
 
-  
-  
+
   # sub title 
   sub.title.label = NULL
   if(scale.population)

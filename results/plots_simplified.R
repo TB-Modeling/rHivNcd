@@ -31,7 +31,9 @@ simplot.ncd.prevalence.baseline = function(...,
                                          sexes = DIM.NAMES.SEX,
                                          hiv.status = DIM.NAMES.HIV,
                                          ncd.status = DIM.NAMES.NCD,
-                                         show.treated=F
+                                         show.treated=F,
+                                         for.paper=F,
+                                         no.title=F
 ){
   
   sims = list(...)
@@ -182,12 +184,29 @@ simplot.ncd.prevalence.baseline = function(...,
   
   # data.type label
   data.type.label = data.type
+  y.label=NULL
   if((data.type %in% c("hyp.prev","diab.prev")))
     data.type.label = paste0(data.type, " (no comorbidity)")
   if(combine.comorbidity)
-    data.type.label = paste0(data.type, " (+ hyp/diab comorbidity)")  
+    data.type.label = paste0(data.type, " (+ hyp/diab comorbidity)")
+  if(for.paper){
+    if(data.type=="hyp.prev"){
+      data.type.label = "Hypertension"
+      y.label = "Hypertension prevalence"
+    }
+    if(data.type=="diab.prev"){
+      data.type.label = "Diabetes"
+      y.label = "Diabetes prevalence"
+    }
+      
+    if(data.type=="diab.hyp.prev"){
+      data.type.label = "Comorbid Hypertension and Diabetes"
+      y.label = "Comorbid hypertension and diabetes prevalence"
+    }
+  }
+  if(no.title)
+    data.type.label=NULL
 
-  
   
   
   # sub title 
@@ -209,10 +228,12 @@ simplot.ncd.prevalence.baseline = function(...,
   # } else{
     plot = ggplot() + 
       geom_line(data = df.sim, aes(x = year, y = value, color = sim.id, group = group.id)) +
-      scale_y_continuous(labels = scales::percent,name = NULL,limits=c(0,NA)) + 
+      scale_y_continuous(labels = scales::percent,name = y.label,limits=c(0,NA)) + 
                          # ,limits=c(0,.3)
       labs(title = paste0(data.type.label))+
-      theme(legend.position = "none"
+      theme_bw() +
+      theme(text = element_text(size = 10),
+      legend.position = "none"
             # panel.border = element_blank(), axis.line = element_line(color="gray")
       )
   # }

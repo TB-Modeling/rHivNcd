@@ -1,7 +1,7 @@
 source("plots.R")
 source("globalEnvironment.R")
 source("rHelperFunctions.R")
-source("postProcessingFunctions.R") # moved all functions to this file so I can just source it 
+source("results/postProcessingFunctions.R") # moved all functions to this file so I can just source it 
 
 START.YEAR=2015
 INT.START.YEAR=2023
