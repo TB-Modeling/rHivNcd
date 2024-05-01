@@ -65,9 +65,10 @@ df.reduction.in.deaths.per.pop.per.trt.clinic = reshape2::melt(reduction.in.deat
 df.reduction.in.events.per.pop.per.trt.community = reshape2::melt(reduction.in.events.per.pop.per.trt[,5:7])
 df.reduction.in.deaths.per.pop.per.trt.community = reshape2::melt(reduction.in.deaths.per.pop.per.trt[,5:7])
 
+## Figure 1 is the model figure 
 
-## Figure 1: Calibration to HIV model – population size by HIV 
-jpeg(file=paste0("figures/Fig1.jpeg"), width = 2500,height = 1500,res=200)
+## Figure 2: Calibration to HIV model – population size by HIV 
+jpeg(file=paste0("figures/Fig2.jpeg"), width = 2500,height = 1500,res=200)
 simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "population",facet.by = "hiv.status",scale.population = T,
         years = as.character(2015:2040),Fig.1 = T) +
   scale_color_manual(name = "Model", 
@@ -79,7 +80,7 @@ simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "population",facet.by =
       subtitle = element_blank()) 
 dev.off()
 
-jpeg(file=paste0("figures/Fig1A.jpeg"), width = 2500,height = 1500,res=200)
+jpeg(file=paste0("figures/Fig2A.jpeg"), width = 2500,height = 1500,res=200)
 simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "hiv.prevalence",scale.population = T,
         years = as.character(2015:2040),Fig.1 = T) +
   scale_color_manual(name = "Model", 
@@ -91,7 +92,7 @@ simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "hiv.prevalence",scale.
        subtitle = element_blank()) 
 dev.off()
 
-jpeg(file=paste0("figures/Fig1B.jpeg"), width = 2500,height = 1500,res=200)
+jpeg(file=paste0("figures/Fig2B.jpeg"), width = 2500,height = 1500,res=200)
 simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "hiv.incidence",scale.population = T,
         years = as.character(2015:2040),Fig.1 = T) +
   scale_color_manual(name = "Model", 
@@ -117,7 +118,7 @@ simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "population",facet.by =
        subtitle = element_blank()) 
 dev.off()
 
-## Figure 2: NCD burden over time, no interventions (by disease/comorbidity type)
+## Figure 3: NCD burden over time, no interventions (by disease/comorbidity type)
 hyp.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "hyp.prev", 
                                            combine.comorbidity = T,years = as.character(2015:2040),for.paper = T,no.title = T) 
 diab.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "diab.prev", 
@@ -125,17 +126,17 @@ diab.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "diab.p
 diab.hyp.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "diab.hyp.prev", 
                                                 combine.comorbidity = F,years = as.character(2015:2040),for.paper = T, no.title = T) 
 
-jpeg(file=paste0("figures/Fig2.jpeg"), width = 2000,height = 750,res=200)
+jpeg(file=paste0("figures/Fig3.jpeg"), width = 2000,height = 750,res=200)
 grid.arrange(hyp.prev, diab.prev, diab.hyp.prev, ncol=3)
 dev.off()
 
-## Figure 2B
+## Figure 3B
 for(i in 1:nrow(df.ncd.burden.by.age)){
   df.ncd.burden.by.age$plot.label[i] = paste0(format(round(df.ncd.burden.by.age$value[i]),big.mark=",")," (",
                                               round(all.proportions[i]),"%)")
 }
 
-jpeg(file=paste0("figures/Fig2B.jpeg"), width = 2000,height = 1000,res=200)
+jpeg(file=paste0("figures/Fig3B.jpeg"), width = 2000,height = 1000,res=200)
 ggplot(data = df.ncd.burden.by.age,                         
        aes(x = age,
            y = value,
@@ -156,8 +157,8 @@ ggplot(data = df.ncd.burden.by.age,
   scale_y_continuous(labels = function(x){format(x,big.mark=",",scientific = FALSE)},name = NULL, limits = c(0,NA))
 dev.off()
 
-## Figure 3A: HIV treatment coverage 
-jpeg(file=paste0("figures/Fig3A.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 4A: HIV treatment coverage 
+jpeg(file=paste0("figures/Fig4A.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.hiv.coverage, aes(color=intervention, y=value/100, x=year)) + 
   geom_line() + 
   theme(panel.background = element_blank(), 
@@ -170,8 +171,8 @@ ggplot(df.hiv.coverage, aes(color=intervention, y=value/100, x=year)) +
   scale_y_continuous(labels = scales::percent,name = NULL, limits = c(NA,NA))
 dev.off()
 
-## Figure 3B (version 1): Cumulative HIV inc, per 100,000 pop 
-jpeg(file=paste0("figures/Fig3B_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 4B (version 1): Cumulative HIV inc, per 100,000 pop 
+jpeg(file=paste0("figures/Fig4B_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.hiv.inc.per.pop, aes(x=intervention, y=value, color=intervention)) + 
   stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
   stat_summary(fun="median", geom="point",size=3,pch=19)+
@@ -186,8 +187,8 @@ ggplot(df.hiv.inc.per.pop, aes(x=intervention, y=value, color=intervention)) +
   ylab(NULL) 
 dev.off()
 
-## Figure 3B (version 2): % Reduction in HIV inc, relative to baseline
-jpeg(file=paste0("figures/Fig3B_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 4B (version 2): % Reduction in HIV inc, relative to baseline
+jpeg(file=paste0("figures/Fig4B_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.relative.redux.hiv.events.per.pop, aes(x=intervention, y=value, color=intervention)) + 
   stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
   stat_summary(fun="median", geom="point",size=3,pch=19)+
@@ -204,8 +205,8 @@ ggplot(df.relative.redux.hiv.events.per.pop, aes(x=intervention, y=value, color=
   ylab(NULL)
 dev.off()
 
-## Figure 3C (version 1): Cumulative HIV deaths, per 100,000 pop
-jpeg(file=paste0("figures/Fig3C_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 4C (version 1): Cumulative HIV deaths, per 100,000 pop
+jpeg(file=paste0("figures/Fig4C_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.hiv.deaths.per.pop, aes(x=intervention, y=value, color=intervention)) + 
   stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
   stat_summary(fun="median", geom="point",size=3,pch=19)+
@@ -220,8 +221,8 @@ ggplot(df.hiv.deaths.per.pop, aes(x=intervention, y=value, color=intervention)) 
   ylab(NULL)
 dev.off()
 
-## Figure 3C (version 2): % Reduction in HIV deaths, relative to baseline
-jpeg(file=paste0("figures/Fig3C_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 4C (version 2): % Reduction in HIV deaths, relative to baseline
+jpeg(file=paste0("figures/Fig4C_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.relative.redux.hiv.deaths.per.pop, aes(x=intervention, y=value, color=intervention)) + 
   stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
   stat_summary(fun="median", geom="point",size=3,pch=19)+
@@ -238,8 +239,8 @@ ggplot(df.relative.redux.hiv.deaths.per.pop, aes(x=intervention, y=value, color=
   ylab(NULL)
 dev.off()
 
-## Figure 3D: NCD treatment coverage 
-jpeg(file=paste0("figures/Fig3D.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 4D: NCD treatment coverage 
+jpeg(file=paste0("figures/Fig4D.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.ncd.coverage, aes(color=intervention, y=value/100, x=year)) + 
   geom_line() + ylim(0,NA) +
   theme(panel.background = element_blank(), 
@@ -253,8 +254,8 @@ ggplot(df.ncd.coverage, aes(color=intervention, y=value/100, x=year)) +
 dev.off()
 
 
-## Figure 3E (version 1): Cumulative CVD events, per 100,000 pop
-jpeg(file=paste0("figures/Fig3E_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 4E (version 1): Cumulative CVD events, per 100,000 pop
+jpeg(file=paste0("figures/Fig4E_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.cvd.events.per.pop, aes(x=intervention, y=value, color=intervention)) + 
   stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
   stat_summary(fun="median", geom="point",size=3,pch=19)+
@@ -269,8 +270,8 @@ ggplot(df.cvd.events.per.pop, aes(x=intervention, y=value, color=intervention)) 
   ylab(NULL)
 dev.off()
 
-## Figure 3E (version 2, same as 4A): % Reduction in CVD events, relative to baseline
-jpeg(file=paste0("figures/Fig3E_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 4E (version 2, same as 5A): % Reduction in CVD events, relative to baseline
+jpeg(file=paste0("figures/Fig4E_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.relative.redux.events.per.pop, aes(x=intervention, y=value, color=intervention)) + 
   stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
   stat_summary(fun="median", geom="point",size=3,pch=19)+
@@ -287,8 +288,8 @@ ggplot(df.relative.redux.events.per.pop, aes(x=intervention, y=value, color=inte
   ylab(NULL)
 dev.off()
 
-## Figure 3F (version 1): Cumulative CVD deaths, per 100,000 pop
-jpeg(file=paste0("figures/Fig3F_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 4F (version 1): Cumulative CVD deaths, per 100,000 pop
+jpeg(file=paste0("figures/Fig4F_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.cvd.deaths.per.pop, aes(x=intervention, y=value, color=intervention)) + 
   stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
   stat_summary(fun="median", geom="point",size=3,pch=19)+
@@ -303,8 +304,8 @@ ggplot(df.cvd.deaths.per.pop, aes(x=intervention, y=value, color=intervention)) 
   ylab(NULL)
 dev.off()
 
-## Figure 3F (version 2): % Reduction in CVD deaths, relative to baseline
-jpeg(file=paste0("figures/Fig3F_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 4F (version 2): % Reduction in CVD deaths, relative to baseline
+jpeg(file=paste0("figures/Fig4F_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.relative.redux.deaths.per.pop, aes(x=intervention, y=value, color=intervention)) + 
   stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
   stat_summary(fun="median", geom="point",size=3,pch=19)+
@@ -322,8 +323,8 @@ ggplot(df.relative.redux.deaths.per.pop, aes(x=intervention, y=value, color=inte
 dev.off()
 
 
-## Figure 4C - Reduction in CVD events, relative to baseline, per 1k treated
-jpeg(file=paste0("figures/Fig4C.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 5C - Reduction in CVD events, relative to baseline, per 1k treated
+jpeg(file=paste0("figures/Fig5C.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.reduction.in.events.per.pop.per.trt, aes(x=intervention, y=value, color=intervention)) + 
   stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
   #stat_summary(fun="median", geom="point",size=10,pch=4)+
@@ -343,8 +344,8 @@ ggplot(df.reduction.in.events.per.pop.per.trt, aes(x=intervention, y=value, colo
 dev.off()
 
 
-## Figure 4D - Reduction in CVD deaths, relative to baseline, per 1k treated
-jpeg(file=paste0("figures/Fig4D.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+## Figure 5D - Reduction in CVD deaths, relative to baseline, per 1k treated
+jpeg(file=paste0("figures/Fig5D.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.reduction.in.deaths.per.pop.per.trt, aes(x=intervention, y=value, color=intervention)) + 
   stat_summary(fun.data = quantiles_95, geom="errorbar",width=.1,size=0.5) + 
   stat_summary(fun="median", geom="point",size=3,pch=19)+
