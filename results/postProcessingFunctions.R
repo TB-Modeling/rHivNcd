@@ -38,7 +38,7 @@ read.ncd.simset = function(){
     invisible(lapply(REPLICATIONS,function(rep){
       
       files=list.files(OUTPUTS.DIR)
-      file = files[endsWith(files,paste0("ncd",scenario,"-rep",rep))]
+      file = files[endsWith(files,paste0("ncd",scenario,"-rep",rep)) & grepl("Stats",files)]
       
    #   tryCatch({    # if this code triggers an error, it will evaluate to NA 
         stats<-readRDS(paste0(OUTPUTS.DIR,file))

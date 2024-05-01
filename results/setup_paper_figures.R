@@ -4,14 +4,16 @@ source("population.R")
 source("rHelperFunctions.R")
 source("rCoreFunctions.R")
 source("plots.R")
-source("results/postProcessingFunctions.R") # moved all functions to this file so I can just source it 
+source("results/postProcessingFunctions.R") 
 source("results/plots_simplified.R")
 
 START.YEAR=2015
 INT.START.YEAR=2023
 INT.END.YEAR=2030
-END.YEAR=2040 #you can alternatively set this to 2040
+END.YEAR=2040 
 n.trt.years = (END.YEAR+1)-INT.START.YEAR
+
+PER.POPULATION.SIZE = 100000
 
 SCENARIOS = c(1:7)
 HIV.SCENARIOS = c("noint", # NCD scen 1
@@ -25,6 +27,7 @@ HIV.SCENARIOS = c("noint", # NCD scen 1
 REPLICATIONS = c(1:100) 
 n.reps=length(REPLICATIONS)
 OUTPUTS.DIR = "~/Library/CloudStorage/OneDrive-JohnsHopkins/MELISSA/Model/rHivNcd/outputs/0509/"
+#OUTPUTS.DIR = "outputs/"
 
 interventions = paste0("scen_",SCENARIOS)
 interventions.full.names = list(interventions = c("(1) No intervention","(2) Basic NCD care @HIV clinics",
@@ -33,7 +36,6 @@ interventions.full.names = list(interventions = c("(1) No intervention","(2) Bas
                                                   "(7) Intensive NCD care + comprehensive HIV care @ community"))
 years = as.character(c(2022:2040))
 
-PER.POPULATION.SIZE = 100000
 
 # if I need to read in new Rockfish outputs
 if(1==2){
@@ -47,12 +49,16 @@ if(1==2){
 }
 
 # if I have already saved results
-if(1==2){
-  load("outputs/ncd.simset_2023-05-09.Rdata")
-  khm.simset.full = read.khm.simset.full()
+if(1==1){
+  # load("outputs/ncd.simset_2024-05-01.Rdata")
+  # load("outputs/ncd.results.array.cumulative_2024-05-01.Rdata")
+  # load("outputs/ncd.results.array.annual_2024-05-01.Rdata")
   
-  load("outputs/ncd.results.array.cumulative_2023-05-09.Rdata")
-  load("outputs/ncd.results.array.annual_2023-05-09.Rdata")
+  load("outputs/outputs_backup/ncd.simset_2023-05-09.Rdata")
+  load("outputs/outputs_backup/ncd.results.array.cumulative_2023-05-09.Rdata")
+  load("outputs/outputs_backup/ncd.results.array.annual_2023-05-09.Rdata")
+  
+  khm.simset.full = read.khm.simset.full()
   
 }
 

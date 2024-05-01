@@ -44,7 +44,7 @@ ncdScenarios=list(
 
 # # #######################################################
 # # # SINGLE RUN ON ROCKFISH
-if (1==1) {
+if (1==2) {
   vReps=1:100 #reps
   vNcdScenarios=1:7 #scenarios
   #############
@@ -101,45 +101,45 @@ if (1==1) {
 
 
 # #######################################################
-# # MULTI REPS
-# if (1==2){
-#   vReps=1#:10 #reps
-#   vNcdScenarios=7 #scenarios
-#   print("running models sequentially ....")
-#   nReps=length(vReps)
-#   nNcdScenarios=length(vNcdScenarios)
-#   
-#   lapply(vReps,function(rep){
-#     lapply(vNcdScenarios,function(ncdId){
-#       set.seed(rep)
-#       print(paste("replication ",rep," scenario", ncdScenarios[[ncdId]]$id, "starting..."))
-#       
-#       # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
-#       pop<-initialize.simulation(id = rep,
-#                                  n = POP.SIZE,
-#                                  rep=rep,
-#                                  ncdScenario = ncdScenarios[[ncdId]]$id,
-#                                  saScenario = 0)
-#       #run sims
-#       
-#       while(pop$params$CYNOW<= END.YEAR)
-#         run.one.year.int(pop,
-#                          ncdScenario =ncdScenarios[[ncdId]]$id,
-#                          int.start.year = 2023,
-#                          int.end.year = 2030,
-#                          pCoverage = ncdScenarios[[ncdId]]$pCoverage,
-#                          pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
-#                          pDropOut=ncdScenarios[[ncdId]]$pDropOut
-#         )
-#       
-#       #saving population stat and param files separately
-#       x=0
-#       saveRDS(pop$stats,file = paste0("outputs/popStats-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
-#       saveRDS(pop$params,file = paste0("outputs/popParams-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
-#       
-#     })
-#   })
-# }
+# MULTI REPS
+if (1==1){
+  vReps=1:2 #reps
+  vNcdScenarios=1:7 #scenarios
+  print("running models sequentially ....")
+  nReps=length(vReps)
+  nNcdScenarios=length(vNcdScenarios)
+
+  lapply(vReps,function(rep){
+    lapply(vNcdScenarios,function(ncdId){
+      set.seed(rep)
+      print(paste("replication ",rep," scenario", ncdScenarios[[ncdId]]$id, "starting..."))
+
+      # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
+      pop<-initialize.simulation(id = rep,
+                                 n = POP.SIZE,
+                                 rep=rep,
+                                 ncdScenario = ncdScenarios[[ncdId]]$id,
+                                 saScenario = 0)
+      #run sims
+
+      while(pop$params$CYNOW<= END.YEAR)
+        run.one.year.int(pop,
+                         ncdScenario =ncdScenarios[[ncdId]]$id,
+                         int.start.year = 2023,
+                         int.end.year = 2030,
+                         pCoverage = ncdScenarios[[ncdId]]$pCoverage,
+                         pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
+                         pDropOut=ncdScenarios[[ncdId]]$pDropOut
+        )
+
+      #saving population stat and param files separately
+      x=0
+      saveRDS(pop$stats,file = paste0("outputs/popStats-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+      saveRDS(pop$params,file = paste0("outputs/popParams-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+
+    })
+  })
+}
 # 
 # 
 # 

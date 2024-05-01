@@ -14,15 +14,36 @@ labels = c("scen_1" = interventions.full.names[[1]][1],
           "scen_6" = interventions.full.names[[1]][6],
           "scen_7" = interventions.full.names[[1]][7])
 
+labels[7] = "(7) Intensive NCD care + comprehensive\n HIV care @ community"
+clear.col = rgb(0, 0, 1, alpha = 0)
+
 model.labels = c("1" = "Compartmental HIV model",
                  "2" = "Individual-based NCD simulation")
 
-# Use this to save the intervention label
-ggplot(df.hiv.inc.per.pop, aes(x=intervention, y=value, fill=intervention)) + 
-  stat_summary(fun.data = quantiles_95, geom="boxplot")  + 
-  theme(legend.position = "bottom") +
-  scale_fill_manual(labels = labels, 
-                    values=cols)
+# Use one of these to save the intervention label
+if(1==2){
+  ggplot(df.hiv.inc.per.pop, aes(x=intervention, y=value, fill=intervention)) + 
+    stat_summary(fun.data = quantiles_95, geom="boxplot")  + 
+    theme(legend.position = "bottom") +
+    scale_fill_manual(labels = labels, 
+                      values=cols)
+  
+  ggplot(df.hiv.inc.per.pop, aes(x=intervention, y=value, color=intervention)) + 
+    stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
+    stat_summary(fun="median", geom="point",size=3,pch=19)+
+    theme(legend.position = "bottom") +
+    scale_color_manual(labels = labels, 
+                       values=cols)
+  
+  ggplot(df.relative.redux.events.per.pop, aes(x=intervention, y=value, color=intervention)) + 
+    stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
+    stat_summary(fun="median", geom="point",size=3,pch=19)+
+    #theme(legend.position = "bottom") +
+    guides(fill=guide_legend(ncol=2)) +
+    scale_color_manual(labels = labels[2:7], 
+                       values=cols[2:7]) 
+}
+
 
 # Setting up plotting data.frames
 df.hiv.coverage = reshape2::melt(hiv.treatment.coverage.median)
@@ -46,7 +67,7 @@ df.reduction.in.deaths.per.pop.per.trt.community = reshape2::melt(reduction.in.d
 
 
 ## Figure 1: Calibration to HIV model – population size by HIV 
-jpeg(file=paste0("plots/for_paper/Fig1.jpeg"), width = 2500,height = 1500,res=200)
+jpeg(file=paste0("figures/Fig1.jpeg"), width = 2500,height = 1500,res=200)
 simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "population",facet.by = "hiv.status",scale.population = T,
         years = as.character(2015:2040),Fig.1 = T) +
   scale_color_manual(name = "Model", 
@@ -58,7 +79,7 @@ simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "population",facet.by =
       subtitle = element_blank()) 
 dev.off()
 
-jpeg(file=paste0("plots/for_paper/Fig1A.jpeg"), width = 2500,height = 1500,res=200)
+jpeg(file=paste0("figures/Fig1A.jpeg"), width = 2500,height = 1500,res=200)
 simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "hiv.prevalence",scale.population = T,
         years = as.character(2015:2040),Fig.1 = T) +
   scale_color_manual(name = "Model", 
@@ -70,7 +91,7 @@ simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "hiv.prevalence",scale.
        subtitle = element_blank()) 
 dev.off()
 
-jpeg(file=paste0("plots/for_paper/Fig1B.jpeg"), width = 2500,height = 1500,res=200)
+jpeg(file=paste0("figures/Fig1B.jpeg"), width = 2500,height = 1500,res=200)
 simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "hiv.incidence",scale.population = T,
         years = as.character(2015:2040),Fig.1 = T) +
   scale_color_manual(name = "Model", 
@@ -83,7 +104,7 @@ simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "hiv.incidence",scale.p
 dev.off()
 
 
-jpeg(file=paste0("plots/for_paper/FigS1.jpeg"), width = 2500,height = 1500,res=200)
+jpeg(file=paste0("figures/FigS1.jpeg"), width = 2500,height = 1500,res=200)
 simplot(khm.simset.full[[1]],ncd.simset[[1]],data.type = "population",facet.by = "age",scale.population = T,
         years = as.character(2015:2040)) +
   scale_color_manual(name = "Model", 
@@ -104,7 +125,7 @@ diab.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "diab.p
 diab.hyp.prev = simplot.ncd.prevalence.baseline(ncd.simset[[1]], data.type = "diab.hyp.prev", 
                                                 combine.comorbidity = F,years = as.character(2015:2040),for.paper = T, no.title = T) 
 
-jpeg(file=paste0("plots/for_paper/Fig2.jpeg"), width = 2000,height = 750,res=200)
+jpeg(file=paste0("figures/Fig2.jpeg"), width = 2000,height = 750,res=200)
 grid.arrange(hyp.prev, diab.prev, diab.hyp.prev, ncol=3)
 dev.off()
 
@@ -114,7 +135,7 @@ for(i in 1:nrow(df.ncd.burden.by.age)){
                                               round(all.proportions[i]),"%)")
 }
 
-jpeg(file=paste0("plots/for_paper/Fig2B.jpeg"), width = 2000,height = 1000,res=200)
+jpeg(file=paste0("figures/Fig2B.jpeg"), width = 2000,height = 1000,res=200)
 ggplot(data = df.ncd.burden.by.age,                         
        aes(x = age,
            y = value,
@@ -136,7 +157,7 @@ ggplot(data = df.ncd.burden.by.age,
 dev.off()
 
 ## Figure 3A: HIV treatment coverage 
-jpeg(file=paste0("plots/for_paper/Fig3A.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+jpeg(file=paste0("figures/Fig3A.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.hiv.coverage, aes(color=intervention, y=value/100, x=year)) + 
   geom_line() + 
   theme(panel.background = element_blank(), 
@@ -149,12 +170,30 @@ ggplot(df.hiv.coverage, aes(color=intervention, y=value/100, x=year)) +
   scale_y_continuous(labels = scales::percent,name = NULL, limits = c(NA,NA))
 dev.off()
 
-## Figure 3B: Cumulative HIV inc, per 100,000 pop 
-jpeg(file=paste0("plots/for_paper/Fig3B.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
-ggplot(df.hiv.inc.per.pop, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
-  stat_summary(fun.data = quantiles_95, geom="boxplot")  + 
-  # labs(title = paste0("Cumulative HIV infections (per ",PER.POPULATION.SIZE," population size), 2023-2040")) + 
+## Figure 3B (version 1): Cumulative HIV inc, per 100,000 pop 
+jpeg(file=paste0("figures/Fig3B_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+ggplot(df.hiv.inc.per.pop, aes(x=intervention, y=value, color=intervention)) + 
+  stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
+  stat_summary(fun="median", geom="point",size=3,pch=19)+
+  guides(color="none") + 
+  theme(panel.background = element_blank(), 
+        panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = "grey", linetype="dotted"),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        text = element_text(size = 15)) + 
+  xlab(NULL)+
+  ylab(NULL) 
+dev.off()
+
+## Figure 3B (version 2): % Reduction in HIV inc, relative to baseline
+jpeg(file=paste0("figures/Fig3B_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+ggplot(df.relative.redux.hiv.events.per.pop, aes(x=intervention, y=value, color=intervention)) + 
+  stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
+  stat_summary(fun="median", geom="point",size=3,pch=19)+
+  guides(color="none") + 
+  scale_y_continuous(labels = scales::percent,name = NULL) +
+  scale_color_manual(values=cols[2:7]) +
   theme(panel.background = element_blank(), 
         panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = "grey", linetype="dotted"),
@@ -165,13 +204,30 @@ ggplot(df.hiv.inc.per.pop, aes(x=intervention, y=value, fill=intervention)) +
   ylab(NULL)
 dev.off()
 
+## Figure 3C (version 1): Cumulative HIV deaths, per 100,000 pop
+jpeg(file=paste0("figures/Fig3C_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+ggplot(df.hiv.deaths.per.pop, aes(x=intervention, y=value, color=intervention)) + 
+  stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
+  stat_summary(fun="median", geom="point",size=3,pch=19)+
+  guides(color="none") + 
+  theme(panel.background = element_blank(), 
+        panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = "grey", linetype="dotted"),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        text = element_text(size = 15)) + 
+  xlab(NULL)+
+  ylab(NULL)
+dev.off()
 
-## Figure 3C: Cumulative HIV deaths, per 100,000 pop
-jpeg(file=paste0("plots/for_paper/Fig3C.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
-ggplot(df.hiv.deaths.per.pop, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
-  stat_summary(fun.data = quantiles_95, geom="boxplot") +
-  # labs(title = paste0("Cumulative HIV deaths (per ",PER.POPULATION.SIZE," population size), 2023-2040")) +
+## Figure 3C (version 2): % Reduction in HIV deaths, relative to baseline
+jpeg(file=paste0("figures/Fig3C_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+ggplot(df.relative.redux.hiv.deaths.per.pop, aes(x=intervention, y=value, color=intervention)) + 
+  stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
+  stat_summary(fun="median", geom="point",size=3,pch=19)+
+  guides(color="none") + 
+  scale_y_continuous(labels = scales::percent,name = NULL) +
+  scale_color_manual(values=cols[2:7]) +
   theme(panel.background = element_blank(), 
         panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = "grey", linetype="dotted"),
@@ -183,7 +239,7 @@ ggplot(df.hiv.deaths.per.pop, aes(x=intervention, y=value, fill=intervention)) +
 dev.off()
 
 ## Figure 3D: NCD treatment coverage 
-jpeg(file=paste0("plots/for_paper/Fig3D.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+jpeg(file=paste0("figures/Fig3D.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
 ggplot(df.ncd.coverage, aes(color=intervention, y=value/100, x=year)) + 
   geom_line() + ylim(0,NA) +
   theme(panel.background = element_blank(), 
@@ -197,12 +253,12 @@ ggplot(df.ncd.coverage, aes(color=intervention, y=value/100, x=year)) +
 dev.off()
 
 
-## Figure 3E: Cumulative CVD events, per 100,000 pop
-jpeg(file=paste0("plots/for_paper/Fig3E.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
-ggplot(df.cvd.events.per.pop, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
-  stat_summary(fun.data = quantiles_95, geom="boxplot") +
-  # labs(title = paste0("Cumulative CVD events (per ",PER.POPULATION.SIZE," population size), 2023-2040")) +
+## Figure 3E (version 1): Cumulative CVD events, per 100,000 pop
+jpeg(file=paste0("figures/Fig3E_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+ggplot(df.cvd.events.per.pop, aes(x=intervention, y=value, color=intervention)) + 
+  stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
+  stat_summary(fun="median", geom="point",size=3,pch=19)+
+  guides(color="none") + 
   theme(panel.background = element_blank(), 
         panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = "grey", linetype="dotted"),
@@ -213,32 +269,14 @@ ggplot(df.cvd.events.per.pop, aes(x=intervention, y=value, fill=intervention)) +
   ylab(NULL)
 dev.off()
 
-
-## Figure 3F: Cumulative CVD deaths, per 100,000 pop
-jpeg(file=paste0("plots/for_paper/Fig3F.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
-ggplot(df.cvd.deaths.per.pop, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
-  stat_summary(fun.data = quantiles_95, geom="boxplot") +
-  # labs(title = paste0("Cumulative CVD deaths (per ",PER.POPULATION.SIZE," population size), 2023-2040")) +
-  theme(panel.background = element_blank(), 
-        panel.grid = element_blank(),
-        panel.grid.major.y = element_line(color = "grey", linetype="dotted"),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
-        text = element_text(size = 15)) + 
-  xlab(NULL)+
-  ylab(NULL)
-dev.off()
-
-
-## Figure 4A - % Reduction in CVD events, relative to baseline - NEW
-jpeg(file=paste0("plots/for_paper/Fig4A.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
-ggplot(df.relative.redux.events.per.pop, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
+## Figure 3E (version 2, same as 4A): % Reduction in CVD events, relative to baseline
+jpeg(file=paste0("figures/Fig3E_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+ggplot(df.relative.redux.events.per.pop, aes(x=intervention, y=value, color=intervention)) + 
+  stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
+  stat_summary(fun="median", geom="point",size=3,pch=19)+
+  guides(color="none") + 
   scale_y_continuous(labels = scales::percent,name = NULL) +
-  stat_summary(fun.data = quantiles_95, geom="boxplot") + 
-  scale_fill_manual(values=cols[2:7]) +
-  # labs(title = paste0("Percent reduction in CVD events, relative to baseline, 2023-2040")) +
+  scale_color_manual(values=cols[2:7]) +
   theme(panel.background = element_blank(), 
         panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = "grey", linetype="dotted"),
@@ -249,14 +287,12 @@ ggplot(df.relative.redux.events.per.pop, aes(x=intervention, y=value, fill=inter
   ylab(NULL)
 dev.off()
 
-## Figure 4B - % Reduction in CVD events, relative to baseline - NEW
-jpeg(file=paste0("plots/for_paper/Fig4B.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
-ggplot(df.relative.redux.deaths.per.pop, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
-  scale_y_continuous(labels = scales::percent,name = NULL) +
-  stat_summary(fun.data = quantiles_95, geom="boxplot") + 
-  scale_fill_manual(values=cols[2:7]) +
-  # labs(title = paste0("Percent reduction in CVD deaths, relative to baseline, 2023-2040")) +
+## Figure 3F (version 1): Cumulative CVD deaths, per 100,000 pop
+jpeg(file=paste0("figures/Fig3F_numbers.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+ggplot(df.cvd.deaths.per.pop, aes(x=intervention, y=value, color=intervention)) + 
+  stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
+  stat_summary(fun="median", geom="point",size=3,pch=19)+
+  guides(color="none") + 
   theme(panel.background = element_blank(), 
         panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = "grey", linetype="dotted"),
@@ -266,30 +302,35 @@ ggplot(df.relative.redux.deaths.per.pop, aes(x=intervention, y=value, fill=inter
   xlab(NULL)+
   ylab(NULL)
 dev.off()
+
+## Figure 3F (version 2): % Reduction in CVD deaths, relative to baseline
+jpeg(file=paste0("figures/Fig3F_percent_redux.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+ggplot(df.relative.redux.deaths.per.pop, aes(x=intervention, y=value, color=intervention)) + 
+  stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
+  stat_summary(fun="median", geom="point",size=3,pch=19)+
+  guides(color="none") + 
+  scale_y_continuous(labels = scales::percent,name = NULL) +
+  scale_color_manual(values=cols[2:7]) +
+  theme(panel.background = element_blank(), 
+        panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = "grey", linetype="dotted"),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        text = element_text(size = 15)) + 
+  xlab(NULL)+
+  ylab(NULL)
+dev.off()
+
 
 ## Figure 4C - Reduction in CVD events, relative to baseline, per 1k treated
-jpeg(file=paste0("plots/for_paper/Fig4C.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
-ggplot(df.reduction.in.events.per.pop.per.trt, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
-  stat_summary(fun.data = quantiles_95, geom="boxplot") + 
-  scale_fill_manual(values=cols[2:7]) +
-  # labs(title = paste0("Reduction in CVD events, relative to baseline, per 1k treated, 2023-2040")) +
-  theme(panel.background = element_blank(), 
-        panel.grid = element_blank(),
-        panel.grid.major.y = element_line(color = "grey", linetype="dotted"),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
-        text = element_text(size = 15)) + 
-  xlab(NULL)+
-  ylab(NULL)
-dev.off()
-
-## Figure 4D - Reduction in CVD deaths, relative to baseline, per 1k treated
-jpeg(file=paste0("plots/for_paper/Fig4D.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
-ggplot(df.reduction.in.deaths.per.pop.per.trt, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
-  stat_summary(fun.data = quantiles_95, geom="boxplot") + 
-  scale_fill_manual(values=cols[2:7]) +
+jpeg(file=paste0("figures/Fig4C.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+ggplot(df.reduction.in.events.per.pop.per.trt, aes(x=intervention, y=value, color=intervention)) + 
+  stat_summary(fun.data = quantiles_95, geom="errorbar",width=0.1,size=0.5) + 
+  #stat_summary(fun="median", geom="point",size=10,pch=4)+
+  stat_summary(fun="median", geom="point",size=3,pch=19)+
+  #stat_summary(fun="median", geom="point",size=3,pch=1,color="black")+
+  scale_color_manual(values=cols[2:7]) +
+  guides(color="none") + 
   # labs(title = paste0("Reduction in CVD deaths, relative to baseline, per 1k treated, 2023-2040")) +
   theme(panel.background = element_blank(), 
         panel.grid = element_blank(),
@@ -302,102 +343,20 @@ ggplot(df.reduction.in.deaths.per.pop.per.trt, aes(x=intervention, y=value, fill
 dev.off()
 
 
-
-## OPTION TO SPLIT OUT CLINIC/COMMUNITY (but I actually prefer keeping them on the same scale?):
-## Figure 4C - Reduction in CVD events, relative to baseline, per 1k treated, clinic
-ggplot(df.reduction.in.events.per.pop.per.trt.clinic, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
-  stat_summary(fun.data = quantiles_95, geom="boxplot") + 
-  scale_fill_manual(values=cols[2:4]) +
-  labs(title = paste0("Reduction in CVD events (clinic-based interventions), relative to baseline, per 1k treated, 2023-2040"))
-
-## Figure 4D - Reduction in CVD deaths, relative to baseline, per 1k treated, clinic
-ggplot(df.reduction.in.deaths.per.pop.per.trt.clinic, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
-  stat_summary(fun.data = quantiles_95, geom="boxplot") + 
-  scale_fill_manual(values=cols[2:4]) +
-  labs(title = paste0("Reduction in CVD deaths (clinic-based interventions), relative to baseline, per 1k treated, 2023-2040"))
-
-## Figure 4E - Reduction in CVD events, relative to baseline, per 1k treated, community
-ggplot(df.reduction.in.events.per.pop.per.trt.community, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
-  stat_summary(fun.data = quantiles_95, geom="boxplot") + 
-  scale_fill_manual(values=cols[5:7]) +
-  labs(title = paste0("Reduction in CVD events (community-based interventions), relative to baseline, per 1k treated, 2023-2040"))
-
-## Figure 4F - Reduction in CVD deaths, relative to baseline, per 1k treated, community
-ggplot(df.reduction.in.deaths.per.pop.per.trt.community, aes(x=intervention, y=value, fill=intervention)) + 
-  guides(fill="none") + 
-  stat_summary(fun.data = quantiles_95, geom="boxplot") + 
-  scale_fill_manual(values=cols[5:7]) +
-  labs(title = paste0("Reduction in CVD deaths, relative to baseline, per 1k treated, 2023-2040"))
-
-
-if(1==2){
-  ## REMOVING THESE FIGURES - I think it's fine just in the table 
-  ## Figure 3C: Person-time on treatment
-  trt.df = reshape2::melt(number.treated.per.pop)
-  jpeg(file=paste0("plots/for_paper/Fig4A.jpeg"), width = 1000,height = 500,res=200)
-  ggplot(trt.df, aes(x=intervention, y=value, fill=intervention)) + 
-    guides(fill="none") + 
-    stat_summary(fun.data = quantiles_95, geom="boxplot") + ylim(0,NA) 
-  dev.off()
-}
-
-
-
-## OLD PLOTS (NOT STANDARDIZED TO PER.X.POPULATION)
-if(1==2)
-{
-  
-  ## Figure 3C: Cumulative HIV inc
-  hiv.inc.df = reshape2::melt(hiv.inc.cumulative)
-  jpeg(file=paste0("plots/for_paper/Fig3C.jpeg"), width = 1000,height = 500,res=200)
-  ggplot(hiv.inc.df, aes(x=intervention, y=value, fill=intervention)) + 
-    guides(fill="none") + 
-    stat_summary(fun.data = quantiles_95, geom="boxplot") + ylim(0,NA) # + labs(title = "Cumulative HIV infections, 2023-2040")
-  dev.off()
-  
-  ## Figure 3D: Cumulative CVD events
-  cvd.events.df = reshape2::melt(cvd.events.cumulative)
-  jpeg(file=paste0("plots/for_paper/Fig3D.jpeg"), width = 1000,height = 500,res=200)
-  ggplot(cvd.events.df, aes(x=intervention, y=value, fill=intervention)) + 
-    guides(fill="none") + 
-    stat_summary(fun.data = quantiles_95, geom="boxplot") + ylim(10000,NA) # + labs(title = "Cumulative CVD events, 2023-2040")
-  dev.off()
-  
-  ## Figure 3E: Cumulative HIV deaths
-  hiv.deaths.df = reshape2::melt(hiv.deaths.cumulative)
-  jpeg(file=paste0("plots/for_paper/Fig3E.jpeg"), width = 1000,height = 500,res=200)
-  ggplot(hiv.deaths.df, aes(x=intervention, y=value, fill=intervention)) + 
-    guides(fill="none") + 
-    stat_summary(fun.data = quantiles_95, geom="boxplot") + ylim(0,NA) # + labs(title = "Cumulative HIV deaths, 2023-2040")
-  dev.off()
-  
-  ## Figure 3F: Cumulative CVD deaths
-  cvd.deaths.df = reshape2::melt(cvd.deaths.cumulative)
-  jpeg(file=paste0("plots/for_paper/Fig3F.jpeg"), width = 1000,height = 500,res=200)
-  ggplot(cvd.deaths.df, aes(x=intervention, y=value, fill=intervention)) + 
-    guides(fill="none") + 
-    stat_summary(fun.data = quantiles_95, geom="boxplot") + ylim(5000,NA) # + labs(title = "Cumulative CVD deaths, 2023-2040")
-  dev.off()
-  
-  ## Figure 4B: Reduction in events per number treated
-  redux.events.per.trt.df = reshape2::melt(reduction.in.events.per.trt)
-  jpeg(file=paste0("plots/for_paper/Fig4B.jpeg"), width = 1000,height = 500,res=200)
-  ggplot(redux.events.per.trt.df, aes(x=intervention, y=value, fill=intervention)) + 
-    guides(fill="none") + 
-    stat_summary(fun.data = quantiles_95, geom="boxplot") #+ labs(title = "Reduction in cumulative CVD events per 10,000 treated, 2023-2040")
-  dev.off()
-  
-  ## Figure 4C: Reduction in deaths per number treated
-  redux.deaths.per.trt.df = reshape2::melt(reduction.in.deaths.per.trt)
-  jpeg(file=paste0("plots/for_paper/Fig4C.jpeg"), width = 1000,height = 500,res=200)
-  ggplot(redux.deaths.per.trt.df, aes(x=intervention, y=value, fill=intervention)) + 
-    guides(fill="none") + 
-    stat_summary(fun.data = quantiles_95, geom="boxplot") #+ labs(title = "Reduction in cumulative CVD deaths per 10,000 treated, 2023-2040")
-  dev.off()
-  
-  
-  
-  }
+## Figure 4D - Reduction in CVD deaths, relative to baseline, per 1k treated
+jpeg(file=paste0("figures/Fig4D.jpeg"), width = WIDTH,height = HEIGHT,res=RES)
+ggplot(df.reduction.in.deaths.per.pop.per.trt, aes(x=intervention, y=value, color=intervention)) + 
+  stat_summary(fun.data = quantiles_95, geom="errorbar",width=.1,size=0.5) + 
+  stat_summary(fun="median", geom="point",size=3,pch=19)+
+  scale_color_manual(values=cols[2:7]) +
+  guides(color="none") + 
+  # labs(title = paste0("Reduction in CVD deaths, relative to baseline, per 1k treated, 2023-2040")) +
+  theme(panel.background = element_blank(), 
+        panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = "grey", linetype="dotted"),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        text = element_text(size = 15)) + 
+  xlab(NULL)+
+  ylab(NULL)
+dev.off()
