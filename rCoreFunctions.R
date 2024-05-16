@@ -261,9 +261,9 @@ update.ncd.states<-function(pop){
                                                 years = as.character(pop$params$CYNOW),
                                                 keep.dimensions = c('age','sex','hiv.status','ncd.status','year'))[,,,,1]#to remove year dimension
   #merging NCD trt into untreated states for the purpose of modeling new events
-  current.ncd.states[,,,"NCD.DIAB"]<-current.ncd.states[,,,"NCD.DIAB"]+current.ncd.states[,,,"NCD.DIAB.TRT"]
-  current.ncd.states[,,,"NCD.HYP"]<-current.ncd.states[,,,"NCD.HYP"]+current.ncd.states[,,,"NCD.HYP.TRT"]
-  current.ncd.states[,,,"NCD.DIAB_HYP"]<-current.ncd.states[,,,"NCD.DIAB_HYP"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT"]
+  current.ncd.states[,,,"NCD.DIAB"]<-current.ncd.states[,,,"NCD.DIAB"]+current.ncd.states[,,,"NCD.DIAB.TRT"]+current.ncd.states[,,,"NCD.DIAB.TRT.ADH"]
+  current.ncd.states[,,,"NCD.HYP"]<-current.ncd.states[,,,"NCD.HYP"]+current.ncd.states[,,,"NCD.HYP.TRT"]+current.ncd.states[,,,"NCD.HYP.TRT.ADH"]
+  current.ncd.states[,,,"NCD.DIAB_HYP"]<-current.ncd.states[,,,"NCD.DIAB_HYP"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT.ADH"]
   current.ncd.states<-current.ncd.states[,,,c(1:4)]
   
   current.ncd.props<-return.prop.sex.age(vFreq = current.ncd.states)
@@ -297,7 +297,8 @@ update.ncd.states<-function(pop){
   
   # TRANSITION to DH from D or H
   invisible(lapply(pop$members,function(p){
-    if(p$ncdState==NCD.DIAB || p$ncdState==NCD.HYP ||p$ncdState==NCD.DIAB.TRT || p$ncdState==NCD.HYP.TRT){
+    #if(p$ncdState==NCD.DIAB || p$ncdState==NCD.HYP ||p$ncdState==NCD.DIAB.TRT || p$ncdState==NCD.HYP.TRT){
+    if(p$ncdState %in% c("NCD.DIAB","NCD.HYP","NCD.DIAB.TRT","NCD.HYP.TRT","NCD.DIAB.TRT.ADH","NCD.HYP.TRT.ADH")){
       if(runif(1) < trans.prob.diab.hyp[p$agegroup,p$sex,p$hivState]){
         pop$record.diab.hyp.inc(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$model.diab.hyp.inc(pop$params$TNOW)
@@ -308,9 +309,9 @@ update.ncd.states<-function(pop){
                                                 years = as.character(pop$params$CYNOW),
                                                 keep.dimensions = c('age','sex','hiv.status','ncd.status','year'))[,,,,1]#to remove year dimension
   #merging NCD trt into untreated states for the purpose of modeling new events
-  current.ncd.states[,,,"NCD.DIAB"]<-current.ncd.states[,,,"NCD.DIAB"]+current.ncd.states[,,,"NCD.DIAB.TRT"]
-  current.ncd.states[,,,"NCD.HYP"]<-current.ncd.states[,,,"NCD.HYP"]+current.ncd.states[,,,"NCD.HYP.TRT"]
-  current.ncd.states[,,,"NCD.DIAB_HYP"]<-current.ncd.states[,,,"NCD.DIAB_HYP"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT"]
+  current.ncd.states[,,,"NCD.DIAB"]<-current.ncd.states[,,,"NCD.DIAB"]+current.ncd.states[,,,"NCD.DIAB.TRT"]+current.ncd.states[,,,"NCD.DIAB.TRT.ADH"]
+  current.ncd.states[,,,"NCD.HYP"]<-current.ncd.states[,,,"NCD.HYP"]+current.ncd.states[,,,"NCD.HYP.TRT"]+current.ncd.states[,,,"NCD.HYP.TRT.ADH"]
+  current.ncd.states[,,,"NCD.DIAB_HYP"]<-current.ncd.states[,,,"NCD.DIAB_HYP"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT.ADH"]
   current.ncd.states<-current.ncd.states[,,,c(1:4)]
   
   current.ncd.props<-return.prop.sex.age(vFreq = current.ncd.states)
@@ -345,9 +346,9 @@ update.ncd.states<-function(pop){
                                                 years = as.character(pop$params$CYNOW),
                                                 keep.dimensions = c('age','sex','hiv.status','ncd.status','year'))[,,,,1]#to remove year dimension
   #merging NCD trt into untreated states for the purpose of modeling new events
-  current.ncd.states[,,,"NCD.DIAB"]<-current.ncd.states[,,,"NCD.DIAB"]+current.ncd.states[,,,"NCD.DIAB.TRT"]
-  current.ncd.states[,,,"NCD.HYP"]<-current.ncd.states[,,,"NCD.HYP"]+current.ncd.states[,,,"NCD.HYP.TRT"]
-  current.ncd.states[,,,"NCD.DIAB_HYP"]<-current.ncd.states[,,,"NCD.DIAB_HYP"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT"]
+  current.ncd.states[,,,"NCD.DIAB"]<-current.ncd.states[,,,"NCD.DIAB"]+current.ncd.states[,,,"NCD.DIAB.TRT"]+current.ncd.states[,,,"NCD.DIAB.TRT.ADH"]
+  current.ncd.states[,,,"NCD.HYP"]<-current.ncd.states[,,,"NCD.HYP"]+current.ncd.states[,,,"NCD.HYP.TRT"]+current.ncd.states[,,,"NCD.HYP.TRT.ADH"]
+  current.ncd.states[,,,"NCD.DIAB_HYP"]<-current.ncd.states[,,,"NCD.DIAB_HYP"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT"]+current.ncd.states[,,,"NCD.DIAB_HYP.TRT.ADH"]
   current.ncd.states<-current.ncd.states[,,,c(1:4)]
   
   current.ncd.props<-return.prop.sex.age(vFreq = current.ncd.states)
@@ -571,6 +572,7 @@ run.one.year.int<-function(pop,
                            int.end.year,#intervention last year
                            pCoverage, # prop of community screened for ncd
                            pNcdTrtInitiation, # prop of ncd diag starting successful trt
+                           pNcdTrtAdherence, # prop of ncd trt adhering to medication 
                            pDropOut=0, #prob of monthly dropout 
                            bAllowReenrollment=TRUE #allowing by default
 ){ 
@@ -691,6 +693,7 @@ run.one.year.int<-function(pop,
                                   int.end.year=int.end.year,
                                   pCoverage = pCoverage,
                                   pNcdTrtInitiation = pNcdTrtInitiation,
+                                  pNcdTrtAdherence = pNcdTrtAdherence,
                                   pDropOut=pDropOut,
                                   bAllowReenrollment=bAllowReenrollment)
     
@@ -761,7 +764,8 @@ run.one.year.int<-function(pop,
 
 # covering a percentage of the population or those that meet certain criteria,
 # screening for NCDs with 100% sensitivity/specificity and starting people on treatment with prob "pNcdTrtInitiation"
-# pNcdTrtInitiation represents a combination of factors related to acceptability, uptake, and adherence, 
+# pNcdTrtInitiation ONLY represents treatment uptake
+# pNcdTrtAdherence now represents medication among those initiated on treatment 
 # assuming re-enrollement for now
 # assuming a combined trt option for hyp.diab; they will discontinue together
 # HIV intervention will run seperately in khm, we will read the input here but dont model explicit HIV intervention
@@ -771,6 +775,7 @@ model.ncd.intervention<-function(pop,
                                  int.end.year,#intervention last year
                                  pCoverage=0, # prop of community screened for ncd
                                  pNcdTrtInitiation=0, # prop of ncd diag starting successful trt
+                                 pNcdTrtAdherence=0, # prop of ncd trt adhering to medication 
                                  pDropOut=0, #prob of ncd trt discontinuation
                                  bAllowReenrollment=TRUE #allowing by default
 ){
@@ -793,28 +798,30 @@ model.ncd.intervention<-function(pop,
     
     # model new enrollments?
     if(pop$params$CYNOW <= int.end.year){
-      selectedIds=NULL
+      selectedIds.clinic=NULL
+      selectedIds.community=NULL
+
       # intervention focused at HIV clinic (among HIV.ENG)
-      if (ncdScenario %in% c(2,3,4)){
-        # vector of Ids for those eligible to receive the intervention 
-        vIds=c()
+      if ("clinic" %in% ncdScenarios[[ncdScenario]]$location) { 
+        
+        vIds=c() # vector of Ids for those eligible to receive the intervention 
         invisible(lapply(c(1:length(pop$members)),function(x){
           p=pop$members[[x]]
           if (p$hivState==HIV.ENG){
             vIds<<-cbind(vIds,x)
-          }
-        }))
-        #estimate the number of people that will be screened
-        nToScreen= round(pCoverage * length(vIds))
-        #choose a random set from the community
-        selectedIds=sample(size = nToScreen,x = vIds,replace = F )
+            }}))
+        
+        nToScreen.clinic = round(pCoverage * length(vIds)) #estimate the number of people that will be screened
+        selectedIds.clinic=sample(size = nToScreen.clinic,x = vIds,replace = F ) #choose a random set from the clinic
       }
-      else{ #intervention focused at the community level
-        #estimate the number of people that will be screened
-        nToScreen= round(pCoverage * length(pop$members))
-        #choose a random set from the community
-        selectedIds=sample(size = nToScreen,x = length(pop$members),replace = F )
+      
+      #intervention focused at the community level
+      else { 
+        nToScreen.community = round(pCoverage * length(pop$members)) #estimate the number of people that will be screened
+        selectedIds.community=sample(size = nToScreen.community,x = length(pop$members),replace = F ) #choose a random set from the community
       }
+      
+      selectedIds = unique(c(selectedIds.clinic,selectedIds.community))
       
       #loop over those selected
       invisible(lapply(selectedIds,function(x){
@@ -824,27 +831,48 @@ model.ncd.intervention<-function(pop,
         
         pop$record.ncd.screening(p$agegroup,p$sex,p$hivState,p$ncdState)
         tnow=pop$params$TNOW
-        # NCD screening and treatment
+        
+        # NCD screening, treatment initiation, and treatment adherence 
         if(p$ncdState ==NCD.DIAB){
           pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
           p$model.diab.diag(tnow)
+          
           if(runif(1) < pNcdTrtInitiation){
-            pop$record.diab.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-            p$start.diab.trt(tnow)
+            if(runif(1) < pNcdTrtAdherence){
+              pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+              p$start.diab.trt.adherence(tnow)
+            } else {
+              pop$record.diab.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+              p$start.diab.trt(tnow)
+            }
           }}
+         
         if(p$ncdState ==NCD.HYP){
           pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
           p$model.hyp.diag(tnow)
+          
           if(runif(1) < pNcdTrtInitiation){
-            pop$record.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-            p$start.hyp.trt(tnow)
+            if(runif(1) < pNcdTrtAdherence){
+              pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+              p$start.hyp.trt.adherence(tnow)
+            } else {
+              pop$record.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+              p$start.hyp.trt(tnow)  
+            }
           }}
+        
         if(p$ncdState ==NCD.DIAB_HYP){
           pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
           p$model.diab.hyp.diag(tnow)
+          
           if(runif(1) < pNcdTrtInitiation){
-            pop$record.diab.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-            p$start.diab.hyp.trt(tnow)
+            if(runif(1) < pNcdTrtAdherence){
+              pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+              p$start.diab.hyp.trt.adherence(tnow)
+            } else {
+              pop$record.diab.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+              p$start.diab.hyp.trt(tnow)
+            }
           }}
       }))
     }

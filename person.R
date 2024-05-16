@@ -31,13 +31,16 @@ PERSON<-R6Class("PERSON",
                   #ncd screening
                   bNcdScreened=F,
                   
-                  # ncd diag and treatment times
+                  # ncd diag, treatment, and adherence times
                   tDiabDiag=-1,
                   tHypDiag=-1,
                   tDiabHypDiag=-1,
                   tDiabTrt=-1,
                   tHypTrt=-1,
                   tDiabHypTrt=-1, 
+                  tDiabTrtAdh=-1,
+                  tHypTrtAdh=-1,
+                  tDiabHypTrtAdh=-1, 
                   
                   # cvd events and times
                   monthlyCvdRisk=0,
@@ -110,12 +113,12 @@ PERSON<-R6Class("PERSON",
                     self$tStrokeInc=tnow
                   },
                   
-                  ### risk of CVD events 
+                  ### risk of CVD events - reduce ONLY IF ADHERENT
                   return.cvd.risk=function(params){
                     ncd.trt.multiplier=1
-                    if(self$ncdState==NCD.DIAB.TRT) ncd.trt.multiplier=params$red.cvd.event.diab.trt
-                    if(self$ncdState==NCD.HYP.TRT) ncd.trt.multiplier=params$red.cvd.event.hyp.trt
-                    if(self$ncdState==NCD.DIAB_HYP.TRT) ncd.trt.multiplier=params$red.cvd.event.diabHyp.trt
+                    if(self$ncdState==NCD.DIAB.TRT.ADH) ncd.trt.multiplier=params$red.cvd.event.diab.trt
+                    if(self$ncdState==NCD.HYP.TRT.ADH) ncd.trt.multiplier=params$red.cvd.event.hyp.trt
+                    if(self$ncdState==NCD.DIAB_HYP.TRT.ADH) ncd.trt.multiplier=params$red.cvd.event.diabHyp.trt
                     
                     if(self$nMi+ self$nStroke==0) # if no history of CVD, return original risk
                       risk =self$monthlyCvdRisk * ncd.trt.multiplier
@@ -127,9 +130,9 @@ PERSON<-R6Class("PERSON",
                   ### return CVD mortality
                   return.cvd.mortality = function(params){
                     ncd.trt.multiplier=1
-                    if(self$ncdState==NCD.DIAB.TRT) ncd.trt.multiplier=params$red.cvd.death.diab.trt
-                    if(self$ncdState==NCD.HYP.TRT) ncd.trt.multiplier=params$red.cvd.death.hyp.trt
-                    if(self$ncdState==NCD.DIAB_HYP.TRT) ncd.trt.multiplier=params$red.cvd.death.diabHyp.trt
+                    if(self$ncdState==NCD.DIAB.TRT.ADH) ncd.trt.multiplier=params$red.cvd.death.diab.trt
+                    if(self$ncdState==NCD.HYP.TRT.ADH) ncd.trt.multiplier=params$red.cvd.death.hyp.trt
+                    if(self$ncdState==NCD.DIAB_HYP.TRT.ADH) ncd.trt.multiplier=params$red.cvd.death.diabHyp.trt
                     ##
                     p.cvd.mortality = 0
                     
@@ -184,6 +187,20 @@ PERSON<-R6Class("PERSON",
                     self$ncdState=NCD.DIAB_HYP.TRT
                     self$tDiabHypTrt=tnow
                   },
+                  # start ncd treatment ADHERENCE
+                  start.diab.trt.adherence=function(tnow){
+                    self$ncdState=NCD.DIAB.TRT.ADH
+                    self$tDiabTrtAdh=tnow
+                  },
+                  start.hyp.trt.adherence=function(tnow){
+                    self$ncdState=NCD.HYP.TRT.ADH
+                    self$tHypTrtAdh=tnow
+                  },
+                  start.diab.hyp.trt.adherence=function(tnow){
+                    self$ncdState=NCD.DIAB_HYP.TRT.ADH
+                    self$tDiabHypTrtAdh=tnow
+                  },
+                  
                   model.ncd.trt.dropout=function(){
                       if (self$ncdState==NCD.DIAB.TRT) self$ncdState=NCD.DIAB
                       if (self$ncdState==NCD.HYP.TRT) self$ncdState=NCD.HYP

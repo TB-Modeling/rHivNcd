@@ -18,7 +18,7 @@ AGE.INTERVAL=5
 MIN.AGE=0
 MAX.AGE=85*12
 
-POP.SIZE=500000
+POP.SIZE= 10000 # 500000
 
 #
 FEMALE=1
@@ -36,6 +36,9 @@ NCD.DIAB_HYP=4 #
 NCD.DIAB.TRT=5 #diabetic on treatment
 NCD.HYP.TRT=6 #hypertensive on treatment
 NCD.DIAB_HYP.TRT=7 #diab&hyp on treatment
+NCD.DIAB.TRT.ADH=8 #diabetic on treatment & adherent
+NCD.HYP.TRT.ADH=9 #hypertensive on treatment & adherent
+NCD.DIAB_HYP.TRT.ADH=10 #diab&hyp on treatment & adherent
 #
 DEATH.NATURAL=1
 DEATH.HIV=2
@@ -47,8 +50,21 @@ DIM.NAMES.SEX=c("FEMALE","MALE")
 DIM.NAMES.AGE=c("0-4","5-9","10-14","15-19", "20-24","25-29","30-34","35-39","40-44","45-49","50-54","55-59",
                 "60-64","65-69","70-74","75-79","80-85")
 DIM.NAMES.HIV=c("HIV.NEG","HIV.UNDIAG","HIV.UNENG", "HIV.ENG")
-DIM.NAMES.NCD=c("NCD.NEG","NCD.DIAB","NCD.HYP","NCD.DIAB_HYP","NCD.DIAB.TRT","NCD.HYP.TRT","NCD.DIAB_HYP.TRT")
+DIM.NAMES.NCD=c("NCD.NEG","NCD.DIAB","NCD.HYP","NCD.DIAB_HYP",
+                "NCD.DIAB.TRT","NCD.HYP.TRT","NCD.DIAB_HYP.TRT",
+                "NCD.DIAB.TRT.ADH","NCD.HYP.TRT.ADH","NCD.DIAB_HYP.TRT.ADH")
 DIM.NAMES.YEAR=c(INITIAL.YEAR:END.YEAR)
+
+DIM.NAMES.AGE.SEX.NCD = list(age = DIM.NAMES.AGE,
+                             sex = DIM.NAMES.SEX,
+                             ncd = DIM.NAMES.NCD)
+DIM.NAMES.AGE.SEX.NCD.HIV = c(DIM.NAMES.AGE.SEX.NCD,
+                              list(hiv = DIM.NAMES.HIV))
+# this is the order used in state.sizes (hiv then ncd)
+DIM.NAMES.AGE.SEX.HIV.NCD = list(age = DIM.NAMES.AGE,
+                                 sex = DIM.NAMES.SEX,
+                                 hiv = DIM.NAMES.HIV,
+                                 ncd = DIM.NAMES.NCD)
 
 DIM.SEX=length(DIM.NAMES.SEX)
 DIM.AGE=length(DIM.NAMES.AGE)
@@ -108,22 +124,8 @@ generate.new.modelParameter<-function(rep=0,
   
   ########################################################
   #1- load HIV data  
-  if(MP$NCD.SCENARIO %in% c(1,2,5)){
-    print(paste0("reading data/hiv_simset_noint.RData ..."))
-    load(paste0("data/hiv_simset_noint.RData")) # extended name for different datasets from KHM
-  }
-  if(MP$NCD.SCENARIO %in% c(3,4)){
-    print(paste0("reading data/hiv_simset_retsupp.RData ..."))
-    load(paste0("data/hiv_simset_retsupp.RData")) # extended name for different datasets from KHM
-  }
-  if(MP$NCD.SCENARIO %in% c(6)){
-    print(paste0("reading data/hiv_simset_tsteng.RData ..."))
-    load(paste0("data/hiv_simset_tsteng.RData")) # extended name for different datasets from KHM
-  }
-  if(MP$NCD.SCENARIO %in% c(7)){
-    print(paste0("reading data/hiv_simset_comp.RData ..."))
-    load(paste0("data/hiv_simset_comp.RData")) # extended name for different datasets from KHM
-  }
+  load(paste0("data/hiv_simset_",ncdScenarios[[MP$NCD.SCENARIO]]$hivScenario,".RData")) # loads khm.full object
+  print(paste0("reading data/hiv_simset_",ncdScenarios[[MP$NCD.SCENARIO]]$hivScenario))
   
   # MP$khm.full=khm.full # leaving full simset in here for plotting purposes
   # class(MP$khm.full) = "khm_simulation_output"
@@ -137,12 +139,12 @@ generate.new.modelParameter<-function(rep=0,
   MP$khm.hivPrev2015=khm.hivPrev2015
   #
   # Making sure the KHM timeline agrees with the NCD model:
-  if(!as.numeric(unlist(dimnames(khm$incidence)[1])[[1]])==INITIAL.YEAR)
+  if(!as.numeric(dimnames(khm$incidence)[[1]][[1]])==INITIAL.YEAR)
     stop("Error: KHM starting year is different from NCD model")
   
-  n=length(unlist(dimnames(khm$incidence)[1]))
-  if(as.numeric(unlist(dimnames(khm$incidence)[1])[[n]])< END.YEAR)
-    stop(paste0("Error: KHM END year (",as.numeric(unlist(dimnames(khm$incidence)[1])[[n]]),") is smaller than NCD model (",END.YEAR,")"))
+  n=length(dimnames(khm$incidence)[[1]])
+  if(as.numeric(dimnames(khm$incidence)[[1]][[n]])< END.YEAR)
+    stop(paste0("Error: KHM END year (",as.numeric(dimnames(khm$incidence)[[1]][[n]]),") is smaller than NCD model (",END.YEAR,")"))
   
   ########################################################
   #2- load STEP dataset to generate the initial population by age, sex and ncd state
@@ -154,8 +156,8 @@ generate.new.modelParameter<-function(rep=0,
   #3- read target NCD sizes and compute the target proportions based on 2015 STEP dataset
   D<-read.csv("data/ncd.state.sizes.2015.csv",header = T)[,2:9]
   target.ncd.sizes<-array(0,
-                          dim=c(DIM.AGE,DIM.SEX,DIM.NCD),
-                          dimnames = list(DIM.NAMES.AGE,DIM.NAMES.SEX,DIM.NAMES.NCD))
+                          dim=sapply(DIM.NAMES.AGE.SEX.NCD,length),
+                          dimnames = DIM.NAMES.AGE.SEX.NCD)
   invisible(lapply(1:4,function(i){
     target.ncd.sizes[,,i]<<-array(unlist(D[,(i*2-1):(i*2)]),dim = c(DIM.AGE,DIM.SEX) )}))
   MP$target.ncd.sizes= target.ncd.sizes
@@ -168,8 +170,9 @@ generate.new.modelParameter<-function(rep=0,
     })}))
   target.ncd.props[is.na(target.ncd.props)]<-0
   #add the HIV dimension:
-  q=array(rep(target.ncd.props,4),c(dim(target.ncd.props),DIM.HIV))
-  dimnames(q)<-list(DIM.NAMES.AGE,DIM.NAMES.SEX,DIM.NAMES.NCD,DIM.NAMES.HIV)
+  q=array(rep(target.ncd.props,4),
+          dim = sapply(DIM.NAMES.AGE.SEX.NCD.HIV,length),
+          dimnames = DIM.NAMES.AGE.SEX.NCD.HIV)
   q<-aperm(q,c(1,2,4,3)) #reorder dimensions
   MP$target.ncd.props=q 
   
@@ -192,15 +195,19 @@ generate.new.modelParameter<-function(rep=0,
   #4-load pooled 10-year CVD risk by age/sex/ncd category
   load('data/10.year.cvd.risk.by.age.sex.ncd.Rdata') #this dataset excludes HIV dimension and is only reported for 4 ncd states without trt
   q=pooled.risk.by.age.sex.ncd
-  # dimnames(q)
-  x=array(0,dim = c(DIM.AGE,DIM.SEX,DIM.NCD),dimnames = list(DIM.NAMES.AGE,DIM.NAMES.SEX,DIM.NAMES.NCD))
+  
+  x=array(0,
+          dim=sapply(DIM.NAMES.AGE.SEX.NCD,length),
+          dimnames = DIM.NAMES.AGE.SEX.NCD)
   # inset q into appropriate location by age sex and ncd state
-  x[unlist(dimnames(q)[1]),unlist(dimnames(q)[2]),unlist(dimnames(q)[3])]<-q
-  # copy the same values for ncd states with trt
-  x[unlist(dimnames(q)[1]),unlist(dimnames(q)[2]),c("NCD.DIAB.TRT","NCD.HYP.TRT","NCD.DIAB_HYP.TRT")]<-q[,,c("NCD.DIAB","NCD.HYP","NCD.DIAB_HYP")]
+  x[dimnames(q)[[1]],dimnames(q)[[2]],dimnames(q)[[3]]]<-q
+  # copy the same values for ncd states with trt, same for adherence
+  x[dimnames(q)[[1]],dimnames(q)[[2]],c("NCD.DIAB.TRT","NCD.HYP.TRT","NCD.DIAB_HYP.TRT")]<-q[,,c("NCD.DIAB","NCD.HYP","NCD.DIAB_HYP")]
+  x[dimnames(q)[[1]],dimnames(q)[[2]],c("NCD.DIAB.TRT.ADH","NCD.HYP.TRT.ADH","NCD.DIAB_HYP.TRT.ADH")]<-q[,,c("NCD.DIAB","NCD.HYP","NCD.DIAB_HYP")]
   #adding HIV dimension
-  x<-array(rep(x,4),c(DIM.AGE,DIM.SEX,DIM.NCD,DIM.HIV))
-  dimnames(x)<-list(DIM.NAMES.AGE,DIM.NAMES.SEX,DIM.NAMES.NCD,DIM.NAMES.HIV)
+  x<-array(rep(x,4),
+           dim=sapply(DIM.NAMES.AGE.SEX.NCD.HIV,length),
+           dimnames = DIM.NAMES.AGE.SEX.NCD.HIV)
   x<-aperm(x,c(1,2,4,3))
   # dim(x)
   
@@ -341,6 +348,11 @@ generate.new.stat<-function(rep=0,
     n.diab.trt=v5temp,
     n.hyp.trt=v5temp,
     n.diab.hyp.trt=v5temp,
+    
+    # ncd treatment ADHERENCE
+    n.diab.trt.adherence=v5temp,
+    n.hyp.trt.adherence=v5temp,
+    n.diab.hyp.trt.adherence=v5temp,
     
     #ncd trt dropouts
     n.diab.trt.dropout=v5temp,

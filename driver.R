@@ -1,7 +1,3 @@
-# need a standard set of plots to review the population
-# please add notes/documentation to plots.R
-
-#
 #  R HIVNCD 2022
 #  Driver.R class
 #  
@@ -17,6 +13,98 @@ library(data.table)
 # library(data.table)
 
 #######################################################
+# LIST OF NCD SCENARIOS
+#coverage and dropouts should be specified as monthly values - but treatment initiation and adherence don't have to be? 
+pMonthlyCoverage=0.1/12#assuming 10% annual coverage 
+
+# NEW NCD SCENARIOS
+baselineValues = list(
+  coverage = 1, # 1*7% in baseline scenario only (in all other scenarios, use pMonthlyCoverage above)
+  treatment.uptake = 0.07, #rename; this might need to be post-dropout  Hickey et al, 2021; Table 1: 7% self-reported baseline HTN treatment
+  adherence = 0.40, # Hickey et al, 2021: ~40% of non-intervention group had controlled hypertension ("Among those engaged in care, 56% of intervention group participants and 43% of control group participants had controlled hypertension at year 3")
+  dropout = 0.80/12 # Hickey et al, 2021: ~20% of control group who linked to care attended 1 visit per year for each of 3 years of follow up
+                    # Or do we just model drop-outs to maintain 7% on treatment? --> INCREASE UPTAKE TO MAKE SURE TREATMENT COVERAGE = 7%
+                    # I.e., there are new diagnoses each year, some start on treatment, model the equivalent # dropping out 
+)
+
+cbind(sapply(ncdScenarios, function(x){x$pNcdTrtInitiation})) # example code 
+ncdScenarios = list(
+  "baseline" = list(id = 1, # baseline 
+                    location = "community", # this is new
+                    alias = "baseline", # this is new
+                    pCoverage = baselineValues$coverage, 
+                    pNcdTrtInitiation = baselineValues$treatment, 
+                        # previously: "combination of uptake and adherence", NOW: just uptake (model adherence separately)
+                    pNcdTrtAdherence = baselineValues$adherence, # this is new
+                    pDropOut = baselineValues$dropout,
+                    hivScenario = "noint" # this is new
+  ),
+  "Scen.1a" = list(id = 2, # AMPATH
+                   location = "clinic",
+                   alias = "clinic.AMPATH",
+                   pCoverage = pMonthlyCoverage, # need to decide on this 
+                   pNcdTrtInitiation = 0.35, # Hickey et al, 2021: 35% of control group linked to care
+                   pNcdTrtAdherence = baselineValues$adherence + 0.10, # 10% increase in adherence (--> 50%)
+                   pDropOut = baselineValues$dropout - (0.1/12), # 10% increase in retention (--> 70% dropout)
+                   hivScenario = "noint"
+  ),
+  "Scen.1b" = list(id = 3, # SEARCH telehealth (clinic)
+                   location = "clinic",
+                   alias = "clinic.telehealth",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75, # SEARCH telehealth: among those eligible, % linked and randomized 
+                   pNcdTrtAdherence = baselineValues$adherence + 0.40, # 40% increase in adherence (--> 80%) 
+                   pDropOut = baselineValues$dropout - (0.3/12), # 30% increase in retention (--> 50% dropout)
+                   hivScenario = "noint"
+  ),
+  "Scen.1c" = list(id = 4, # hypothetical, max NCD and HIV
+                   location = "clinic",
+                   alias = "clinic.max",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75,
+                   pNcdTrtAdherence = 1, # baselineValues$adherence + 0.75, # this is >100%
+                   pDropOut = baselineValues$dropout - (0.75/12), # 75% increase in retention (--> 5% dropout)
+                   hivScenario = "comp" # this should be 90/90/90 targets - check HIV model scenarios ("comp" = comprehensive)
+  ),
+  "Scen.2a" = list(id = 5, # SEARCH telehealth (community)
+                   location = "community",
+                   alias = "comm.telehealth",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75,
+                   pNcdTrtAdherence = baselineValues$adherence + 0.40,
+                   pDropOut = baselineValues$dropout - (0.3/12),
+                   hivScenario = "noint"
+  ),
+  "Scen.2b" = list(id = 6, # SEARCH telehealth (community) + HIV screening
+                   location = "community",
+                   alias = "comm.telehealth.hiv.screening",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75,
+                   pNcdTrtAdherence = baselineValues$adherence + 0.40,
+                   pDropOut = baselineValues$dropout - (0.3/12),
+                   hivScenario = "tsteng" # this should be screening & linkage - check HIV model scenarios ("tsteng" = testing and engagement)
+  ),
+  "Scen.3a" = list(id = 7, # SEARCH telehealth (clinic + community) + HIV screening
+                   location = c("clinic","community"),
+                   alias = "comm.clinic.telehealth.hiv.screening",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75,
+                   pNcdTrtAdherence = baselineValues$adherence + 0.40,
+                   pDropOut = baselineValues$dropout - (0.3/12),
+                   hivScenario = "tsteng"
+  ),
+  "Scen.3b" = list(id = 8, # SEARCH telehealth (clinic + community) + HIV 90/90/90
+                   location = c("clinic","community"),
+                   alias = "comm.clinic.max",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75,
+                   pNcdTrtAdherence = baselineValues$adherence + 0.40,
+                   pDropOut = baselineValues$dropout - (0.3/12),
+                   hivScenario = "comp"
+  )
+)
+
+#######################################################
 print("Sourcing dependencies")
 {
   source("globalEnvironment.R")
@@ -26,21 +114,6 @@ print("Sourcing dependencies")
   source("rCoreFunctions.R")
   # source("plots.R")
 }
-#######################################################
-# LIST OF NCD SCENARIOS
-#coverage and dropouts should be specified as monthy values
-pMonthlyCoverage=0.1/12#assuming 10% annual coverage 
-
-ncdScenarios=list(
-  list(id=1,pCoverage=0.0,pNcdTrtInitiation=0.0,pDropOut=0.00),
-  list(id=2,pCoverage= pMonthlyCoverage,pNcdTrtInitiation=0.6,pDropOut=0.10/12), # basic NCD package (HIV clinic)
-  list(id=3,pCoverage=pMonthlyCoverage,pNcdTrtInitiation=0.6,pDropOut=0.10/12), # basic NCD package + HIV retention/suppression (HIV clinic)
-  list(id=4,pCoverage=pMonthlyCoverage,pNcdTrtInitiation=0.8,pDropOut=0.05/12), # intensive NCD + HIV retention/suppression  (HIV clinic)
-  
-  list(id=5,pCoverage=pMonthlyCoverage,pNcdTrtInitiation=0.6,pDropOut=0.10/12), # basic NCD package (community)
-  list(id=6,pCoverage=pMonthlyCoverage,pNcdTrtInitiation=0.6,pDropOut=0.10/12), # basic NCD package + HIV testing/engagement (community)
-  list(id=7,pCoverage=pMonthlyCoverage,pNcdTrtInitiation=0.8,pDropOut=0.05/12) # intensive NCD + comprehensive HIV [t/e/r/s] (community)
-)
 
 # # #######################################################
 # # # SINGLE RUN ON ROCKFISH
@@ -84,6 +157,7 @@ if (1==2) {
                      int.end.year = 2030,
                      pCoverage = ncdScenarios[[ncdId]]$pCoverage,
                      pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
+                     pNcdTrtAdherence = ncdScenarios[[ncdId]]$pNcdTrtAdherence,
                      pDropOut=ncdScenarios[[ncdId]]$pDropOut
     )
 
@@ -104,7 +178,7 @@ if (1==2) {
 # MULTI REPS
 if (1==1){
   vReps=1:2 #reps
-  vNcdScenarios=1:7 #scenarios
+  vNcdScenarios=1:8 #scenarios
   print("running models sequentially ....")
   nReps=length(vReps)
   nNcdScenarios=length(vNcdScenarios)
@@ -129,6 +203,7 @@ if (1==1){
                          int.end.year = 2030,
                          pCoverage = ncdScenarios[[ncdId]]$pCoverage,
                          pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
+                         pNcdTrtAdherence = ncdScenarios[[ncdId]]$pNcdTrtAdherence,
                          pDropOut=ncdScenarios[[ncdId]]$pDropOut
         )
 
@@ -140,14 +215,4 @@ if (1==1){
     })
   })
 }
-# 
-# 
-# 
-# # apply(pop$stats$n.hiv.inc,"year",sum)
-# # 
-# # # #prp screened?
-# # apply(pop$stats$n.ncd.screened,"year",sum)/apply(d6$n.state.sizes,"year",sum)
-# # # 
-# # # apply(pop$stats$n.hyp.trt,"year",sum)
-# # # apply(pop$stats$n.hyp.trt.dropout,"year",sum)
-# # # apply(pop$stats$n.state.sizes,c("ncd.status","year"),sum)[NCD.HYP.TRT,]
+

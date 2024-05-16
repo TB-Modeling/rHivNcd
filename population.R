@@ -55,8 +55,9 @@ POPULATION<-R6Class("POPULATION",
                       return.state.size.distribution=function(){
                         n=length(self$members)
                         state.sizes<-array(0,
-                                           dim=c(DIM.AGE,DIM.SEX,DIM.HIV,DIM.NCD, 1),
-                                           dimnames = list(DIM.NAMES.AGE,DIM.NAMES.SEX,DIM.NAMES.HIV,DIM.NAMES.NCD, as.character(self$params$CYNOW)))
+                                           c(sapply(DIM.NAMES.AGE.SEX.HIV.NCD,length),1),
+                                           dimnames = c(DIM.NAMES.AGE.SEX.HIV.NCD,
+                                                        list(year = as.character(self$params$CYNOW))))
                         invisible(lapply(self$members,function(p){
                           state.sizes[  p$agegroup,
                                         p$sex, 
@@ -157,6 +158,19 @@ POPULATION<-R6Class("POPULATION",
                       record.diab.hyp.trt=function(age,sex,hiv,ncd){
                         self$stats$n.diab.hyp.trt[age,sex,hiv,ncd,as.character(self$params$CYNOW)] <- 
                           self$stats$n.diab.hyp.trt[age,sex,hiv,ncd,as.character(self$params$CYNOW)]+1
+                      },
+                      #record NCD treatment ADHERENCE
+                      record.diab.trt.adherence=function(age,sex,hiv,ncd){
+                        self$stats$n.diab.trt.adherence[age,sex,hiv,ncd,as.character(self$params$CYNOW)] <- 
+                          self$stats$n.diab.trt.adherence[age,sex,hiv,ncd,as.character(self$params$CYNOW)]+1
+                      },
+                      record.hyp.trt.adherence=function(age,sex,hiv,ncd){
+                        self$stats$n.hyp.trt.adherence[age,sex,hiv,ncd,as.character(self$params$CYNOW)] <- 
+                          self$stats$n.hyp.trt.adherence[age,sex,hiv,ncd,as.character(self$params$CYNOW)]+1
+                      },
+                      record.diab.hyp.trt.adherence=function(age,sex,hiv,ncd){
+                        self$stats$n.diab.hyp.trt.adherence[age,sex,hiv,ncd,as.character(self$params$CYNOW)] <- 
+                          self$stats$n.diab.hyp.trt.adherence[age,sex,hiv,ncd,as.character(self$params$CYNOW)]+1
                       },
                       # record ncd trt dropouts
                       record.diab.trt.dropout=function(age,sex,hiv,ncd){

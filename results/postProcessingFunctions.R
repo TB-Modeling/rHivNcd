@@ -361,6 +361,7 @@ generate.cumulative.events.results.array = function(simset.list,
                                          hiv.status = DIM.NAMES.HIV,
                                          ncd.status = DIM.NAMES.NCD,
                                          outcomes = c("n.hiv.eng","n.hyp.trt","n.diab.trt","n.diab.hyp.trt",
+                                                      "n.hyp.trt.adherence","n.diab.trt.adherence","n.diab.hyp.trt.adherence",
                                                       "n.hiv.inc","n.mi.inc","n.stroke.inc",
                                                       "n.deaths.hiv", "n.deaths.cvd","n.deaths.non.hiv")
 ){
@@ -401,6 +402,7 @@ generate.annual.events.results.array = function(simset.list,
                                                 years = as.character(c(START.YEAR:(END.YEAR))),
                                                 outcomes = c("n.state.sizes",
                                                              "n.hiv.eng","n.hyp.trt","n.diab.trt","n.diab.hyp.trt",
+                                                             "n.hyp.trt.adherence","n.diab.trt.adherence","n.diab.hyp.trt.adherence",
                                                              "n.hiv.inc","n.mi.inc","n.stroke.inc",
                                                              "n.deaths.hiv", "n.deaths.cvd","n.deaths.non.hiv")
 ){
