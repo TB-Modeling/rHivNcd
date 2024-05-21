@@ -28,7 +28,7 @@ baselineValues = list(
                     # I.e., there are new diagnoses each year, some start on treatment, model the equivalent # dropping out 
 )
 
-cbind(sapply(ncdScenarios, function(x){x$pNcdTrtInitiation})) # example code 
+#cbind(sapply(ncdScenarios, function(x){x$pNcdTrtInitiation})) # example code 
 ncdScenarios = list(
   "baseline" = list(id = 1, # baseline 
                     location = "community", # this is new
@@ -47,7 +47,7 @@ ncdScenarios = list(
                    pCoverage = pMonthlyCoverage, # need to decide on this 
                    pNcdTrtInitiation = 0.35, # Hickey et al, 2021: 35% of control group linked to care
                    pNcdTrtAdherence = baselineValues$adherence + 0.10, # 10% increase in adherence (--> 50%)
-                   pDropOut = baselineValues$dropout - (0.1/12), # 10% increase in retention (--> 70% dropout)
+                   pDropOut = (0.80/12) - (0.1/12), # 10% increase in retention (--> 70% dropout)
                    hivScenario = "noint"
   ),
   "Scen.1b" = list(id = 3, # SEARCH telehealth (clinic)
@@ -56,7 +56,7 @@ ncdScenarios = list(
                    pCoverage = pMonthlyCoverage, 
                    pNcdTrtInitiation = 0.75, # SEARCH telehealth: among those eligible, % linked and randomized 
                    pNcdTrtAdherence = baselineValues$adherence + 0.40, # 40% increase in adherence (--> 80%) 
-                   pDropOut = baselineValues$dropout - (0.3/12), # 30% increase in retention (--> 50% dropout)
+                   pDropOut = (0.80/12) - (0.3/12), # 30% increase in retention (--> 50% dropout)
                    hivScenario = "noint"
   ),
   "Scen.1c" = list(id = 4, # hypothetical, max NCD and HIV
@@ -65,7 +65,7 @@ ncdScenarios = list(
                    pCoverage = pMonthlyCoverage, 
                    pNcdTrtInitiation = 0.75,
                    pNcdTrtAdherence = 1, # baselineValues$adherence + 0.75, # this is >100%
-                   pDropOut = baselineValues$dropout - (0.75/12), # 75% increase in retention (--> 5% dropout)
+                   pDropOut = (0.80/12) - (0.75/12), # 75% increase in retention (--> 5% dropout)
                    hivScenario = "comp" # this should be 90/90/90 targets - check HIV model scenarios ("comp" = comprehensive)
   ),
   "Scen.2a" = list(id = 5, # SEARCH telehealth (community)
@@ -74,7 +74,7 @@ ncdScenarios = list(
                    pCoverage = pMonthlyCoverage, 
                    pNcdTrtInitiation = 0.75,
                    pNcdTrtAdherence = baselineValues$adherence + 0.40,
-                   pDropOut = baselineValues$dropout - (0.3/12),
+                   pDropOut = (0.80/12) - (0.3/12),
                    hivScenario = "noint"
   ),
   "Scen.2b" = list(id = 6, # SEARCH telehealth (community) + HIV screening
@@ -83,7 +83,7 @@ ncdScenarios = list(
                    pCoverage = pMonthlyCoverage, 
                    pNcdTrtInitiation = 0.75,
                    pNcdTrtAdherence = baselineValues$adherence + 0.40,
-                   pDropOut = baselineValues$dropout - (0.3/12),
+                   pDropOut = (0.80/12) - (0.3/12),
                    hivScenario = "tsteng" # this should be screening & linkage - check HIV model scenarios ("tsteng" = testing and engagement)
   ),
   "Scen.3a" = list(id = 7, # SEARCH telehealth (clinic + community) + HIV screening
@@ -92,7 +92,7 @@ ncdScenarios = list(
                    pCoverage = pMonthlyCoverage, 
                    pNcdTrtInitiation = 0.75,
                    pNcdTrtAdherence = baselineValues$adherence + 0.40,
-                   pDropOut = baselineValues$dropout - (0.3/12),
+                   pDropOut = (0.80/12) - (0.3/12),
                    hivScenario = "tsteng"
   ),
   "Scen.3b" = list(id = 8, # SEARCH telehealth (clinic + community) + HIV 90/90/90
@@ -101,7 +101,7 @@ ncdScenarios = list(
                    pCoverage = pMonthlyCoverage, 
                    pNcdTrtInitiation = 0.75,
                    pNcdTrtAdherence = baselineValues$adherence + 0.40,
-                   pDropOut = baselineValues$dropout - (0.3/12),
+                   pDropOut = (0.80/12) - (0.3/12),
                    hivScenario = "comp"
   )
 )
@@ -179,7 +179,7 @@ if (1==2) {
 # #######################################################
 # MULTI REPS
 if (1==1){
-  vReps=1:2 #reps
+  vReps=1:1 #reps
   vNcdScenarios=1:8 #scenarios
   print("running models sequentially ....")
   nReps=length(vReps)
