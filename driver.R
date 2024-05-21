@@ -19,10 +19,11 @@ pMonthlyCoverage=0.1/12#assuming 10% annual coverage
 
 # NEW NCD SCENARIOS
 baselineValues = list(
-  coverage = 1, # 1*7% in baseline scenario only (in all other scenarios, use pMonthlyCoverage above)
-  treatment.uptake = 0.07, #rename; this might need to be post-dropout  Hickey et al, 2021; Table 1: 7% self-reported baseline HTN treatment
+  coverage = .07, # Hickey et al, 2021; Table 1: 7% self-reported baseline HTN treatment; this is post-dropout 
+  treatment = 1, 
   adherence = 0.40, # Hickey et al, 2021: ~40% of non-intervention group had controlled hypertension ("Among those engaged in care, 56% of intervention group participants and 43% of control group participants had controlled hypertension at year 3")
-  dropout = 0.80/12 # Hickey et al, 2021: ~20% of control group who linked to care attended 1 visit per year for each of 3 years of follow up
+  dropout = NULL
+    # 0.80/12 # Hickey et al, 2021: ~20% of control group who linked to care attended 1 visit per year for each of 3 years of follow up
                     # Or do we just model drop-outs to maintain 7% on treatment? --> INCREASE UPTAKE TO MAKE SURE TREATMENT COVERAGE = 7%
                     # I.e., there are new diagnoses each year, some start on treatment, model the equivalent # dropping out 
 )
@@ -35,6 +36,7 @@ ncdScenarios = list(
                     pCoverage = baselineValues$coverage, 
                     pNcdTrtInitiation = baselineValues$treatment, 
                         # previously: "combination of uptake and adherence", NOW: just uptake (model adherence separately)
+                        # but for baseline, this is set to 1 because we are combining coverage and treatment (7%)
                     pNcdTrtAdherence = baselineValues$adherence, # this is new
                     pDropOut = baselineValues$dropout,
                     hivScenario = "noint" # this is new
