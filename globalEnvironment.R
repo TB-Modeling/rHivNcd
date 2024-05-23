@@ -312,7 +312,7 @@ generate.new.stat<-function(rep=0,
     n.births=v1temp,
     n.births.non.hiv=v1temp,
     n.births.hiv=v1temp,
-    
+    ncd.trt.coverage = v1temp,
     
     
     #5D arrays [age, sex, hiv, ncd, year]
