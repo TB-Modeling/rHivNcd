@@ -205,6 +205,9 @@ PERSON<-R6Class("PERSON",
                       if (self$ncdState==NCD.DIAB.TRT) self$ncdState=NCD.DIAB
                       if (self$ncdState==NCD.HYP.TRT) self$ncdState=NCD.HYP
                       if (self$ncdState==NCD.DIAB_HYP.TRT) self$ncdState=NCD.DIAB_HYP
+                      if (self$ncdState==NCD.DIAB.TRT.ADH) self$ncdState=NCD.DIAB
+                      if (self$ncdState==NCD.HYP.TRT.ADH) self$ncdState=NCD.HYP
+                      if (self$ncdState==NCD.DIAB_HYP.TRT.ADH) self$ncdState=NCD.DIAB_HYP
                   }
                   
                 ),
