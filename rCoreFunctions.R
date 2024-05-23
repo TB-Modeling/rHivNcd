@@ -5,13 +5,15 @@
 #####################################
 print("Sourcing rCoreFunctions.R ... ")
 
-
-#creates the initial population
+##------------------------------##
+##-- MAIN INITIALIZE FUNCTION --##
+##------------------------------##
 initialize.simulation <- function( id=0,
                                    n=0 ,
                                    rep=0, #replication id
                                    ncdScenario=0, #ncd scenario
-                                   saScenario=0 #sa scenario
+                                   saScenario=0, #sa scenario
+                                   stable.ncd.coverage=0 # stable ncd treatment coverage 
 ){
   # 1- create an empty population
   pop<-POPULATION$new(id = id,
@@ -64,12 +66,229 @@ initialize.simulation <- function( id=0,
   #
   pop<-invisible(set.initial.hiv.status(pop ))
   pop<-invisible(set.cvd.risk(pop))
+  pop<-invisible(initialize.ncd.treatment(stable.ncd.coverage))
   pop$record.annual.stats()
   pop$increaseYear() 
   #
   pop
 }
 
+##--------------------------------##
+##-- MAIN BASELINE RUN FUNCTION --##
+##--------------------------------##
+# model one simulated year under baseline treatment (from Jan 1st to Dec 31st)
+run.one.year.baseline <-function(pop,
+                                 p.monthly.baseline.enrollment, # sample this during calibration 
+                                 p.monthly.baseline.dropout, # sample this during calibration 
+                                 pNcdTrtAdherence, # prop of ncd trt adhering to medication 
+){ 
+  #### AT YEAR's BEGINNING: computing event probabilities from KHM
+  khm<-compute.khm.probabilities(pop)
+  
+  ##### AT EACH TIMESTEP WITHIN THE YEAR:
+  for(i in (1:ANNUAL.TIMESTEPS)){
+    # print(pop$params$TNOW)
+    
+    # 1- modeling cvd events based on current cvd annual risk    # counting new events: marking those who will die after the event
+    pop<-model.cvd.events(pop)
+    
+    # 2- modeling HIV transitions based on khm outputs
+    pop<-model.hiv.transitions(pop,
+                               khm$khm.prob.hiv.inc,
+                               khm$khm.prob.hiv.eng,
+                               khm$khm.prob.hiv.diseng,
+                               khm$khm.prob.hiv.diag)
+    
+    # 3- modeling & removing HIV and CVD deaths
+    pop<-model.hiv.cvd.deaths(pop,
+                              khm$khm.monthly.hiv.mort,
+                              khm$khm.monthly.non.hiv.mort)
+    
+    # MODEL BASELINE ------
+    pop<-model.ncd.baseline(pop,
+                            p.monthly.baseline.enrollment,
+                            p.monthly.baseline.dropout,
+                            pNcdTrtAdherence)
+    
+    
+    #4- MODEL AGING --------
+    pop$modelAging()
+    
+    #5- MODEL BIRTHS -------
+    {
+      n.births.non.hiv=khm$n.births.non.hiv.per.month[i]
+      n.births.hiv=khm$n.births.hiv.per.month[i]
+      
+      if (n.births.non.hiv>0){
+        vIds = c((pop$params$LAST.PERSON.ID+1): (pop$params$LAST.PERSON.ID+n.births.non.hiv))
+        pop$params$LAST.PERSON.ID=pop$params$LAST.PERSON.ID+n.births.non.hiv
+        vSexes = sample(c(MALE,FEMALE),n.births.non.hiv,prob = c(.5,.5),replace = T) # still 50/50 male/female
+        memberListNew = (mapply(PERSON$new, pop$params$TNOW,
+                                vIds,
+                                vSexes,
+                                0,#age
+                                HIV.NEG,
+                                NCD.NEG)) 
+        pop$addMembers(unlist(memberListNew))
+        # record stats:
+        pop$stats$n.births.non.hiv[pop$params$YNOW]=n.births.non.hiv
+      }
+      if (n.births.hiv>0){
+        vIds = c((pop$params$LAST.PERSON.ID+1): (pop$params$LAST.PERSON.ID+n.births.hiv))
+        pop$params$LAST.PERSON.ID=pop$params$LAST.PERSON.ID+n.births.hiv
+        vSexes = sample(c(MALE,FEMALE),n.births.hiv,prob = c(.5,.5),replace = T)
+        memberListNew = (mapply(PERSON$new,pop$params$TNOW,
+                                vIds,
+                                vSexes,
+                                0,#age
+                                HIV.UNDIAG,
+                                NCD.NEG))  
+        pop$addMembers(memberListNew)
+        # record stats:
+        pop$stats$n.births.hiv[pop$params$YNOW]=n.births.hiv
+        nMaleNewborns=sum(vSexes==MALE)
+        pop$stats$n.hiv.inc["0-4","MALE","HIV.NEG", "NCD.NEG",pop$params$YNOW]=pop$stats$n.hiv.inc["0-4","MALE","HIV.NEG","NCD.NEG",pop$params$YNOW] + nMaleNewborns
+        pop$stats$n.hiv.inc["0-4","FEMALE","HIV.NEG","NCD.NEG",pop$params$YNOW]=pop$stats$n.hiv.inc["0-4","FEMALE","HIV.NEG","NCD.NEG",pop$params$YNOW] + (n.births.hiv-nMaleNewborns)
+      }
+      pop$stats$n.births[pop$params$YNOW]=n.births.non.hiv + n.births.hiv
+    }
+    
+    pop$increaseMonth()
+  }
+  
+  #### AT YEAR's END:
+  ## --MODEL Deaths due to aging out --------
+  pop$model.aging.out()
+  
+  ## -- UPDATE NCD STATES & CVD RISKS FOR NEXT YEAR --------
+  pop<-update.ncd.states(pop)
+  pop<-invisible(set.cvd.risk(pop))
+  ##############################################
+  
+  # END OF YEAR----
+  if (DEBUGMODE) cat("End of year: ",pop$params$CYNOW," --------------------------- \n")
+  # Record annual statistics --------
+  pop$record.annual.stats()
+  #Increment the clock
+  pop$increaseYear()
+  pop
+}
+
+##------------------------------------##
+##-- MAIN INTERVENTION RUN FUNCTION --##
+##------------------------------------##
+# model one simulated year with intervention (from Jan 1st to Dec 31st)
+run.one.year.int<-function(pop,
+                           ncdScenario, 
+                           int.start.year, # intervention start year
+                           int.end.year,#intervention last year
+                           pCoverage, # prop of community screened for ncd
+                           pNcdTrtInitiation, # prop of ncd diag starting successful trt
+                           pNcdTrtAdherence, # prop of ncd trt adhering to medication 
+                           pDropOut=0, #prob of monthly dropout 
+                           bAllowReenrollment=TRUE #allowing by default
+){ 
+  #### AT YEAR's BEGINNING: computing event probabilities from KHM
+  khm<-compute.khm.probabilities(pop)
+  
+  ##### AT EACH TIMESTEP WITHIN THE YEAR:
+  for(i in (1:ANNUAL.TIMESTEPS)){
+    # print(pop$params$TNOW)
+    
+    # 1- modeling cvd events based on current cvd annual risk    # counting new events: marking those who will die after the event
+    pop<-model.cvd.events(pop)
+    
+    # 2- modeling HIV transitions based on khm outputs
+    pop<-model.hiv.transitions(pop,
+                               khm$khm.prob.hiv.inc,
+                               khm$khm.prob.hiv.eng,
+                               khm$khm.prob.hiv.diseng,
+                               khm$khm.prob.hiv.diag)
+    
+    # 3- modeling & removing HIV and CVD deaths
+    pop<-model.hiv.cvd.deaths(pop,
+                              khm$khm.monthly.hiv.mort,
+                              khm$khm.monthly.non.hiv.mort)
+    
+    # MODEL INTERVENTION ------
+    pop<-model.ncd.intervention(pop = pop,
+                                ncdScenario = ncdScenario,
+                                int.start.year=int.start.year,
+                                int.end.year=int.end.year,
+                                pCoverage = pCoverage,
+                                pNcdTrtInitiation = pNcdTrtInitiation,
+                                pNcdTrtAdherence = pNcdTrtAdherence,
+                                pDropOut=pDropOut,
+                                bAllowReenrollment=bAllowReenrollment)
+    
+    
+    #4- MODEL AGING --------
+    pop$modelAging()
+    
+    #5- MODEL BIRTHS -------
+    {
+      n.births.non.hiv=khm$n.births.non.hiv.per.month[i]
+      n.births.hiv=khm$n.births.hiv.per.month[i]
+      
+      if (n.births.non.hiv>0){
+        vIds = c((pop$params$LAST.PERSON.ID+1): (pop$params$LAST.PERSON.ID+n.births.non.hiv))
+        pop$params$LAST.PERSON.ID=pop$params$LAST.PERSON.ID+n.births.non.hiv
+        vSexes = sample(c(MALE,FEMALE),n.births.non.hiv,prob = c(.5,.5),replace = T) # still 50/50 male/female
+        memberListNew = (mapply(PERSON$new, pop$params$TNOW,
+                                vIds,
+                                vSexes,
+                                0,#age
+                                HIV.NEG,
+                                NCD.NEG)) 
+        pop$addMembers(unlist(memberListNew))
+        # record stats:
+        pop$stats$n.births.non.hiv[pop$params$YNOW]=n.births.non.hiv
+      }
+      if (n.births.hiv>0){
+        vIds = c((pop$params$LAST.PERSON.ID+1): (pop$params$LAST.PERSON.ID+n.births.hiv))
+        pop$params$LAST.PERSON.ID=pop$params$LAST.PERSON.ID+n.births.hiv
+        vSexes = sample(c(MALE,FEMALE),n.births.hiv,prob = c(.5,.5),replace = T)
+        memberListNew = (mapply(PERSON$new,pop$params$TNOW,
+                                vIds,
+                                vSexes,
+                                0,#age
+                                HIV.UNDIAG,
+                                NCD.NEG))  
+        pop$addMembers(memberListNew)
+        # record stats:
+        pop$stats$n.births.hiv[pop$params$YNOW]=n.births.hiv
+        nMaleNewborns=sum(vSexes==MALE)
+        pop$stats$n.hiv.inc["0-4","MALE","HIV.NEG", "NCD.NEG",pop$params$YNOW]=pop$stats$n.hiv.inc["0-4","MALE","HIV.NEG","NCD.NEG",pop$params$YNOW] + nMaleNewborns
+        pop$stats$n.hiv.inc["0-4","FEMALE","HIV.NEG","NCD.NEG",pop$params$YNOW]=pop$stats$n.hiv.inc["0-4","FEMALE","HIV.NEG","NCD.NEG",pop$params$YNOW] + (n.births.hiv-nMaleNewborns)
+      }
+      pop$stats$n.births[pop$params$YNOW]=n.births.non.hiv + n.births.hiv
+    }
+    
+    pop$increaseMonth()
+  }
+  
+  #### AT YEAR's END:
+  ## --MODEL Deaths due to aging out --------
+  pop$model.aging.out()
+  
+  ## -- UPDATE NCD STATES & CVD RISKS FOR NEXT YEAR --------
+  pop<-update.ncd.states(pop)
+  pop<-invisible(set.cvd.risk(pop))
+  ##############################################
+  
+  # END OF YEAR----
+  if (DEBUGMODE) cat("End of year: ",pop$params$CYNOW," --------------------------- \n")
+  # Record annual statistics --------
+  pop$record.annual.stats()
+  #Increment the clock
+  pop$increaseYear()
+  pop
+}
+
+
+##---------------------------------##
+##-- HELPER INITIALIZE FUNCTIONS --##
+##---------------------------------##
 
 # sets the initial HIV status (based on HIV state prevalence in year 2015) 
 set.initial.hiv.status = function(pop){
@@ -104,6 +323,381 @@ set.cvd.risk = function(pop){
   pop
 }
 
+# sets initial ncd treatment coverage (7%)
+initialize.ncd.treatment = function(stable.ncd.coverage){
+  baselineNcdIds=c() # vector of Ids for those eligible for baseline treatment
+  invisible(lapply(c(1:length(pop$members)),function(x){
+    p=pop$members[[x]]
+    if (p$ncdState > 1){ # "NCD.DIAB","NCD.HYP","NCD.DIAB_HYP"
+      baselineNcdIds<<-cbind(baselineNcdIds,x)
+    }}))
+  
+  nToScreen.baseline = round((stable.ncd.coverage * length(baselineNcdIds))) # stable.ncd.coverage is 7%; so 7% of people with NCDs are treated
+  selectedIds.baseline=sample(size = nToScreen.baseline,x = baselineNcdIds,replace = F ) #choose a random set from baseline with NCDs 
+  
+  invisible(lapply(selectedIds.baseline,function(x){
+    p=pop$members[[x]]
+    tnow=pop$params$TNOW
+    
+    # NCD screening & treatment initiation (combined at baseline), and treatment adherence 
+    if(p$ncdState==NCD.DIAB){
+      pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+      p$model.diab.diag(tnow)
+      
+      if(runif(1) < pNcdTrtAdherence){
+        pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+        p$start.diab.trt.adherence(tnow)
+      } else {
+        pop$record.diab.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+        p$start.diab.trt(tnow)
+      }
+    }
+    
+    if(p$ncdState==NCD.HYP){
+      pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+      p$model.hyp.diag(tnow)
+      
+      if(runif(1) < pNcdTrtAdherence){
+        pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+        p$start.hyp.trt.adherence(tnow)
+      } else {
+        pop$record.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+        p$start.hyp.trt(tnow)  
+      }
+    }
+    
+    if(p$ncdState==NCD.DIAB_HYP){
+      pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+      p$model.diab.hyp.diag(tnow)
+      
+      if(runif(1) < pNcdTrtAdherence){
+        pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+        p$start.diab.hyp.trt.adherence(tnow)
+      } else {
+        pop$record.diab.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+        p$start.diab.hyp.trt(tnow)
+      }
+    }
+  }))
+  pop
+}
+
+
+##--------------------------##
+##-- HELPER RUN FUNCTIONS --##
+##--------------------------##
+
+# baseline scenario function
+model.ncd.baseline = function(pop,
+                              p.monthly.baseline.enrollment,
+                              p.monthly.baseline.dropout,
+                              pNcdTrtAdherence){
+  
+  # model drop outs
+  invisible(lapply(pop$members,function(p){
+    if(p$ncdState>4) {
+      if (runif(1)<p.monthly.baseline.dropout){
+        #record stats
+        if (p$ncdState %in% c(NCD.DIAB.TRT,NCD.DIAB.TRT.ADH)) pop$record.diab.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+        if (p$ncdState %in% c(NCD.HYP.TRT,NCD.HYP.TRT.ADH)) pop$record.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+        if (p$ncdState %in% c(NCD.DIAB_HYP.TRT,NCD.DIAB_HYP.TRT.ADH)) pop$record.diab.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+        #model dropout
+        p$model.ncd.trt.dropout()
+      }}
+    
+  }))
+  
+  # loop over population, new enrollments (screening & treatment combined at baseline; treatment adherence)
+  invisible(lapply(pop$members,function(p){
+    tnow=pop$params$TNOW
+    if(runif(1) < p.monthly.baseline.enrollment){ 
+      if(p$ncdState==NCD.DIAB){
+        pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+        p$model.diab.diag(tnow)
+        
+        if(runif(1) < pNcdTrtAdherence){
+          pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+          p$start.diab.trt.adherence(tnow)
+        } else {
+          pop$record.diab.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+          p$start.diab.trt(tnow)
+        }
+      }
+      
+      if(p$ncdState==NCD.HYP){
+        pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+        p$model.hyp.diag(tnow)
+        
+        if(runif(1) < pNcdTrtAdherence){
+          pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+          p$start.hyp.trt.adherence(tnow)
+        } else {
+          pop$record.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+          p$start.hyp.trt(tnow)  
+        }
+      }
+      
+      if(p$ncdState==NCD.DIAB_HYP){
+        pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+        p$model.diab.hyp.diag(tnow)
+        
+        if(runif(1) < pNcdTrtAdherence){
+          pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+          p$start.diab.hyp.trt.adherence(tnow)
+        } else {
+          pop$record.diab.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+          p$start.diab.hyp.trt(tnow)
+        }
+      }
+    }
+  })) 
+  
+  pop$return.ncd.trt.coverage(self$params$YNOW)
+   
+  pop
+}
+
+# intervention scenario function 
+model.ncd.intervention<-function(pop,
+                                 ncdScenario=0,
+                                 int.start.year, # intervention start year
+                                 int.end.year,#intervention last year
+                                 pCoverage=0, # prop of community screened for ncd
+                                 pNcdTrtInitiation=0, # ONLY represents treatment uptake (not necessarily adherent)
+                                 pNcdTrtAdherence=0, # represents medication adherence among those initiated on treatment 
+                                 pDropOut=0, #prob of ncd trt discontinuation
+                                 bAllowReenrollment=TRUE #allowing by default
+){
+  
+  if(ncdScenarios[[ncdScenario]]$id!=1){ 
+    #has the intervention begun?
+    if(pop$params$CYNOW >= int.start.year) {
+      
+      # model drop outs
+      invisible(lapply(pop$members,function(p){
+        if(p$ncdState>4) {
+          if (runif(1)<pDropOut){
+            #record stats
+            if (p$ncdState %in% c(NCD.DIAB.TRT,NCD.DIAB.TRT.ADH)) pop$record.diab.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+            if (p$ncdState %in% c(NCD.HYP.TRT,NCD.HYP.TRT.ADH)) pop$record.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+            if (p$ncdState %in% c(NCD.DIAB_HYP.TRT,NCD.DIAB_HYP.TRT.ADH)) pop$record.diab.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+            #model dropout
+            p$model.ncd.trt.dropout()
+          }}
+        
+      }))
+      
+      # model new enrollments
+      if(pop$params$CYNOW <= int.end.year){
+        selectedIds.clinic=NULL
+        selectedIds.community=NULL
+        
+        # intervention focused at HIV clinic (among HIV.ENG)
+        if ("clinic" %in% ncdScenarios[[ncdScenario]]$location) { 
+          
+          vIds=c() # vector of Ids for those eligible to receive the intervention 
+          invisible(lapply(c(1:length(pop$members)),function(x){
+            p=pop$members[[x]]
+            if (p$hivState==HIV.ENG){
+              vIds<<-cbind(vIds,x)
+            }}))
+          
+          nToScreen.clinic = round(pCoverage * length(vIds)) #estimate the number of people that will be screened
+          selectedIds.clinic=sample(size = nToScreen.clinic,x = vIds,replace = F ) #choose a random set from the clinic
+        }
+        
+        #intervention focused at the community level
+        else { 
+          nToScreen.community = round(pCoverage * length(pop$members)) #estimate the number of people that will be screened
+          selectedIds.community=sample(size = nToScreen.community,x = length(pop$members),replace = F ) #choose a random set from the community
+        }
+        
+        selectedIds = unique(c(selectedIds.clinic,selectedIds.community))
+        
+        #loop over those selected
+        invisible(lapply(selectedIds,function(x){
+          p=pop$members[[x]]
+          #should exclude those previously screened, with existing diag, or currently on trt?
+          # if (bAllowReenrollment)  continue #'@MS: we are not using this parameter for now
+          
+          pop$record.ncd.screening(p$agegroup,p$sex,p$hivState,p$ncdState)
+          tnow=pop$params$TNOW
+          
+          # NCD screening, treatment initiation, and treatment adherence 
+          if(p$ncdState==NCD.DIAB){
+            pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+            p$model.diab.diag(tnow)
+            
+            if(runif(1) < pNcdTrtInitiation){
+              if(runif(1) < pNcdTrtAdherence){
+                pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+                p$start.diab.trt.adherence(tnow)
+              } else {
+                pop$record.diab.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+                p$start.diab.trt(tnow)
+              }
+            }}
+          
+          if(p$ncdState==NCD.HYP){
+            pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+            p$model.hyp.diag(tnow)
+            
+            if(runif(1) < pNcdTrtInitiation){
+              if(runif(1) < pNcdTrtAdherence){
+                pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+                p$start.hyp.trt.adherence(tnow)
+              } else {
+                pop$record.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+                p$start.hyp.trt(tnow)  
+              }
+            }}
+          
+          if(p$ncdState==NCD.DIAB_HYP){
+            pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+            p$model.diab.hyp.diag(tnow)
+            
+            if(runif(1) < pNcdTrtInitiation){
+              if(runif(1) < pNcdTrtAdherence){
+                pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+                p$start.diab.hyp.trt.adherence(tnow)
+              } else {
+                pop$record.diab.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+                p$start.diab.hyp.trt(tnow)
+              }
+            }}
+        }))
+      }
+    }
+  }
+  
+  pop
+}
+
+# compute event probabilities from KHM
+compute.khm.probabilities = function(pop){
+  khm=pop$params$khm
+  rv = list() # initialize list we are going to return 
+  
+  ###computing prob of death
+  { 
+    ##Probability of HIV mortality (estimated via # events/ elig pop) --------
+    n.hiv.pos = apply(khm$population[as.character(pop$params$CYNOW-1),-1,,],c(2:3),sum) # extract all but hiv.negative, sum over hiv states
+    target.hiv.mort = khm$hiv.mortality[as.character(pop$params$CYNOW),,] # pull out current year; dimensions are year, age, sex
+    n.hiv.pos.now = apply(khm$population[as.character(pop$params$CYNOW),-1,,],c(2:3),sum)
+    #we are using average to approximate the integral
+    # prob.hiv.mort=target.hiv.mort/((n.hiv.pos + n.hiv.pos.now)/2) 
+    prob.hiv.mort=target.hiv.mort/(n.hiv.pos.now+target.hiv.mort)
+    if(sum(prob.hiv.mort>1)>1)
+      stop(paste("Error: probability of prob.hiv.mort >1 in year ",pop$params$CYNOW))
+    prob.hiv.mort[prob.hiv.mort==Inf]<-0
+    khm.annual.hiv.mort=prob.hiv.mort
+    khm.monthly.hiv.mort=(1-(1-prob.hiv.mort)^(1/12))
+    rv$khm.monthly.hiv.mort = khm.monthly.hiv.mort # add to list we are going to return 
+    
+    ##Probability of non.HIV mortality (estimated via # events/ elig pop) --------
+    n.pop = apply(khm$population[as.character(pop$params$CYNOW-1),,,],c(2:3),sum) # extract all population, sum over hiv states
+    target.non.hiv.mort = khm$non.hiv.mortality[as.character(pop$params$CYNOW),,] # pull out current year; dimensions are year, age, sex
+    n.pop.now = apply(khm$population[as.character(pop$params$CYNOW),,,],c(2:3),sum)
+    #we are using average to approximate the integral
+    # prob.non.hiv.mort=target.non.hiv.mort/((n.pop + n.pop.now)/2) # denominator is now population as well as aging in - aging out 
+    prob.non.hiv.mort=target.non.hiv.mort/( n.pop.now+target.non.hiv.mort)
+    if(sum(prob.non.hiv.mort>1)>1){
+      browser()
+      stop(paste("Error: probability of prob.non.hiv.mort >1 in year ",pop$params$CYNOW))
+    }
+    prob.non.hiv.mort[prob.non.hiv.mort==Inf]<-0
+    khm.annual.non.hiv.mort=prob.non.hiv.mort
+    khm.monthly.non.hiv.mort=(1-(1-prob.non.hiv.mort)^(1/12))
+    rv$khm.monthly.non.hiv.mort = khm.monthly.non.hiv.mort
+    
+  }
+  ###computing number of births (and distributing them over 12 months)
+  {
+    # non-HIV births
+    absolute.n.births.non.hiv=khm$target.parameters$non.hiv.births[as.character(pop$params$CYNOW)] # total non HIV births from HIV model
+    non.hiv.births.scalar = absolute.n.births.non.hiv/sum(khm$population[as.character(pop$params$CYNOW),,,]) # scaled to pop size from HIV model
+    n.births.non.hiv = round(non.hiv.births.scalar*length(pop$members),0) # re-scaled to pop size from NCD model
+    #distribute births over months
+    n.births.non.hiv.per.month=rep(0,ANNUAL.TIMESTEPS)
+    if(n.births.non.hiv>0)
+      n.births.non.hiv.per.month=as.vector(tabulate(sample(size = n.births.non.hiv,x = c(1:ANNUAL.TIMESTEPS),replace = T),nbins = 12))
+    rv$n.births.non.hiv.per.month = n.births.non.hiv.per.month
+    
+    # HIV births - putting into undiagnosed for now
+    absolute.n.births.hiv=khm$target.parameters$hiv.births[as.character(pop$params$CYNOW)] # total HIV births from HIV model
+    hiv.births.scalar = absolute.n.births.hiv/sum(khm$population[as.character(pop$params$CYNOW),-1,,]) # scaled to HIV pop size from HIV model
+    n.births.hiv = round(hiv.births.scalar*sum(pop$return.state.size.distribution()[,,-1,,]),0) # re-scaled to HIV pop size from NCD mode
+    #distribute births over months
+    n.births.hiv.per.month=rep(0,ANNUAL.TIMESTEPS)
+    if(n.births.hiv>0)
+      n.births.hiv.per.month=as.vector(tabulate(sample(size = n.births.hiv,x = c(1:ANNUAL.TIMESTEPS),replace = T),nbins = 12))
+    rv$n.births.hiv.per.month = n.births.hiv.per.month
+    
+  }
+  ###computing care cascade prob of events
+  {
+    ##Probability of incidence (estimated via # events/ elig pop) --------
+    n.hiv.neg = khm$population[as.character(pop$params$CYNOW-1),"HIV.NEG",,]
+    target.inc = khm$incidence[as.character(pop$params$CYNOW),,] # pull out current year; dimensions are year, age, sex
+    n.hiv.neg.now = khm$population[as.character(pop$params$CYNOW),"HIV.NEG",,]
+    delta = n.hiv.neg.now - n.hiv.neg # change in hiv negative population (aging in - aging out - deaths - hiv incidence)
+    delta = delta + target.inc
+    #'@MS: maybe change later?
+    prob.inc=target.inc/(n.hiv.neg + delta)
+    if(sum(prob.inc>1)>1)
+      stop(paste("Error: probability of prob.inc >1 in year ",pop$params$CYNOW))
+    prob.inc[prob.inc==Inf]<-0
+    khm.prob.hiv.inc=(1-(1-prob.inc)^(1/12))
+    rv$khm.prob.hiv.inc = khm.prob.hiv.inc
+    
+    ##Probability of engagement (direct input to HIV model) --------
+    prob.eng=khm$target.parameters$prob.eng[as.character(pop$params$CYNOW),,]
+    if(sum(prob.eng>1)>1)
+      stop(paste("Error: probability of engagement >1 in year ",pop$params$CYNOW))
+    prob.eng[prob.eng==Inf]<-0
+    khm.prob.hiv.eng=(1-(1-prob.eng)^(1/12))
+    rv$khm.prob.hiv.eng = khm.prob.hiv.eng
+    
+    ##Probability of disengagement (direct input to HIV model) --------
+    prob.diseng=khm$target.parameters$prob.diseng[as.character(pop$params$CYNOW),,]
+    if(sum(prob.diseng>1)>1)
+      stop(paste("Error: probability of disengagement >1 in year ",pop$params$CYNOW))
+    prob.diseng[prob.diseng==Inf]<-0
+    khm.prob.hiv.diseng=(1-(1-prob.diseng)^(1/12))
+    rv$khm.prob.hiv.diseng = khm.prob.hiv.diseng
+    
+    ##Probability of diagnosis (direct input to HIV model) --------
+    prob.diag = khm$target.parameters$prob.diag[as.character(pop$params$CYNOW),,]    
+    if(sum(prob.diag>1)>1)
+      stop(paste("Error: probability of prob.diag >1 in year ",pop$params$CYNOW))
+    prob.diag[prob.diag==Inf]<-0
+    khm.prob.hiv.diag=(1-(1-prob.diag)^(1/12))
+    rv$khm.prob.hiv.diag = khm.prob.hiv.diag
+  }
+  
+  rv
+  
+}
+
+# models the CVD events
+model.cvd.events<-function(pop){
+  invisible(lapply(pop$members,function(p){
+    p.cvd.risk = p$return.cvd.risk(pop$params) # this function evaluates whether they have history of cvd events and returns appropriate risk 
+    
+    if(runif(1) < p.cvd.risk){ # evaluate if they have a cvd event 
+      # evaluate whether this should be a stroke event or mi event (assign default male probability, change to female if sex is female)
+      prob.mi=pop$params$prob.first.cvd.event.mi.male
+      if(p$sex==FEMALE) prob.mi=pop$params$prob.first.cvd.event.mi.female
+      
+      if(runif(1) < prob.mi){ # mi event
+        pop$record.mi.inc(p$agegroup,p$sex,p$hivState,p$ncdState)
+        p$model.mi.event(pop$params$TNOW)
+      } else{ # stroke event
+        pop$record.stroke.inc(p$agegroup,p$sex,p$hivState,p$ncdState)
+        p$model.stroke.event(pop$params$TNOW)
+      }}}))
+  pop
+}
 
 # models the HIV transitions 
 model.hiv.transitions<-function(pop,
@@ -140,26 +734,6 @@ model.hiv.transitions<-function(pop,
             browser()
             stop(paste("Error: Person ",x," hivState is ",p$hivState," and it didnt meet any criteria"))
           }}}}}))
-  pop
-}
-
-# models the CVD events
-model.cvd.events<-function(pop){
-  invisible(lapply(pop$members,function(p){
-    p.cvd.risk = p$return.cvd.risk(pop$params) # this function evaluates whether they have history of cvd events and returns appropriate risk 
-    
-    if(runif(1) < p.cvd.risk){ # evaluate if they have a cvd event 
-      # evaluate whether this should be a stroke event or mi event (assign default male probability, change to female if sex is female)
-      prob.mi=pop$params$prob.first.cvd.event.mi.male
-      if(p$sex==FEMALE) prob.mi=pop$params$prob.first.cvd.event.mi.female
-      
-      if(runif(1) < prob.mi){ # mi event
-        pop$record.mi.inc(p$agegroup,p$sex,p$hivState,p$ncdState)
-        p$model.mi.event(pop$params$TNOW)
-      } else{ # stroke event
-        pop$record.stroke.inc(p$agegroup,p$sex,p$hivState,p$ncdState)
-        p$model.stroke.event(pop$params$TNOW)
-      }}}))
   pop
 }
 
@@ -218,7 +792,6 @@ model.hiv.cvd.deaths<-function(pop,
   }
   pop
 }
-
 
 # update NCD state (based on hiv and annual population growth)
 update.ncd.states<-function(pop){ 
@@ -295,7 +868,7 @@ update.ncd.states<-function(pop){
       if(runif(1) < trans.prob.diab.hyp[p$agegroup,p$sex,p$hivState]){
         pop$record.diab.hyp.inc(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$model.diab.hyp.inc(pop$params$TNOW)
-        print("new incident diab hyp case")
+        #print("new incident diab hyp case")
       }}}))
   
   # DIAB #######################################
@@ -333,7 +906,7 @@ update.ncd.states<-function(pop){
       if(runif(1)<trans.prob.diab[p$agegroup,p$sex,p$hivState]){
         pop$record.diab.inc(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$model.diab.inc(pop$params$TNOW)
-        print("new incident diab case")
+        #print("new incident diab case")
       }}}))
   
   # HYP #############################################################################
@@ -371,683 +944,106 @@ update.ncd.states<-function(pop){
       if(runif(1)< trans.prob.hyp[p$agegroup,p$sex,p$hivState]){
         pop$record.hyp.inc(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$model.hyp.inc(pop$params$TNOW)
-        print("new incident hyp case")
+        #print("new incident hyp case")
       }}}))
   
   pop
 }
 
 
-# model one simulated year with intervention (from Jan 1st to Dec 31st)
-run.one.year.int<-function(pop,
-                           ncdScenario=0, #default: no intervention
-                           int.start.year, # intervention start year
-                           int.end.year,#intervention last year
-                           pCoverage, # prop of community screened for ncd
-                           pNcdTrtInitiation, # prop of ncd diag starting successful trt
-                           pNcdTrtAdherence, # prop of ncd trt adhering to medication 
-                           pDropOut=0, #prob of monthly dropout 
-                           bAllowReenrollment=TRUE #allowing by default
-){ 
-  #### AT YEAR's BEGINNING:computing event probabilities from KHM
-  { khm=pop$params$khm
-  ###computing prob of death
-  { 
-    ##Probability of HIV mortality (estimated via # events/ elig pop) --------
-    n.hiv.pos = apply(khm$population[as.character(pop$params$CYNOW-1),-1,,],c(2:3),sum) # extract all but hiv.negative, sum over hiv states
-    target.hiv.mort = khm$hiv.mortality[as.character(pop$params$CYNOW),,] # pull out current year; dimensions are year, age, sex
-    n.hiv.pos.now = apply(khm$population[as.character(pop$params$CYNOW),-1,,],c(2:3),sum)
-    #we are using average to approximate the integral
-    # prob.hiv.mort=target.hiv.mort/((n.hiv.pos + n.hiv.pos.now)/2) 
-    prob.hiv.mort=target.hiv.mort/(n.hiv.pos.now+target.hiv.mort)
-    if(sum(prob.hiv.mort>1)>1)
-      stop(paste("Error: probability of prob.hiv.mort >1 in year ",pop$params$CYNOW))
-    prob.hiv.mort[prob.hiv.mort==Inf]<-0
-    khm.annual.hiv.mort=prob.hiv.mort
-    khm.monthly.hiv.mort=(1-(1-prob.hiv.mort)^(1/12))
-    
-    ##Probability of non.HIV mortality (estimated via # events/ elig pop) --------
-    n.pop = apply(khm$population[as.character(pop$params$CYNOW-1),,,],c(2:3),sum) # extract all population, sum over hiv states
-    target.non.hiv.mort = khm$non.hiv.mortality[as.character(pop$params$CYNOW),,] # pull out current year; dimensions are year, age, sex
-    n.pop.now = apply(khm$population[as.character(pop$params$CYNOW),,,],c(2:3),sum)
-    #we are using average to approximate the integral
-    # prob.non.hiv.mort=target.non.hiv.mort/((n.pop + n.pop.now)/2) # denominator is now population as well as aging in - aging out 
-    prob.non.hiv.mort=target.non.hiv.mort/( n.pop.now+target.non.hiv.mort)
-    if(sum(prob.non.hiv.mort>1)>1){
-      browser()
-      stop(paste("Error: probability of prob.non.hiv.mort >1 in year ",pop$params$CYNOW))
-    }
-    prob.non.hiv.mort[prob.non.hiv.mort==Inf]<-0
-    khm.annual.non.hiv.mort=prob.non.hiv.mort
-    khm.monthly.non.hiv.mort=(1-(1-prob.non.hiv.mort)^(1/12))
-    
-  }
-  ###computing number of births (and distributing them over 12 months)
-  {
-    # non-HIV births
-    absolute.n.births.non.hiv=khm$target.parameters$non.hiv.births[as.character(pop$params$CYNOW)] # total non HIV births from HIV model
-    non.hiv.births.scalar = absolute.n.births.non.hiv/sum(khm$population[as.character(pop$params$CYNOW),,,]) # scaled to pop size from HIV model
-    n.births.non.hiv = round(non.hiv.births.scalar*length(pop$members),0) # re-scaled to pop size from NCD model
-    #distribute births over months
-    n.births.non.hiv.per.month=rep(0,ANNUAL.TIMESTEPS)
-    if(n.births.non.hiv>0)
-      n.births.non.hiv.per.month=as.vector(tabulate(sample(size = n.births.non.hiv,x = c(1:ANNUAL.TIMESTEPS),replace = T),nbins = 12))
-    
-    # HIV births - putting into undiagnosed for now
-    absolute.n.births.hiv=khm$target.parameters$hiv.births[as.character(pop$params$CYNOW)] # total HIV births from HIV model
-    hiv.births.scalar = absolute.n.births.hiv/sum(khm$population[as.character(pop$params$CYNOW),-1,,]) # scaled to HIV pop size from HIV model
-    n.births.hiv = round(hiv.births.scalar*sum(pop$return.state.size.distribution()[,,-1,,]),0) # re-scaled to HIV pop size from NCD mode
-    #distribute births over months
-    n.births.hiv.per.month=rep(0,ANNUAL.TIMESTEPS)
-    if(n.births.hiv>0)
-      n.births.hiv.per.month=as.vector(tabulate(sample(size = n.births.hiv,x = c(1:ANNUAL.TIMESTEPS),replace = T),nbins = 12))
-  }
-  ###computing care cascade prob of events
-  {
-    ##Probability of incidence (estimated via # events/ elig pop) --------
-    n.hiv.neg = khm$population[as.character(pop$params$CYNOW-1),"HIV.NEG",,]
-    target.inc = khm$incidence[as.character(pop$params$CYNOW),,] # pull out current year; dimensions are year, age, sex
-    n.hiv.neg.now = khm$population[as.character(pop$params$CYNOW),"HIV.NEG",,]
-    delta = n.hiv.neg.now - n.hiv.neg # change in hiv negative population (aging in - aging out - deaths - hiv incidence)
-    delta = delta + target.inc
-    #'@MS: maybe change later?
-    prob.inc=target.inc/(n.hiv.neg + delta)
-    if(sum(prob.inc>1)>1)
-      stop(paste("Error: probability of prob.inc >1 in year ",pop$params$CYNOW))
-    prob.inc[prob.inc==Inf]<-0
-    khm.prob.hiv.inc=(1-(1-prob.inc)^(1/12))
-    
-    ##Probability of engagement (direct input to HIV model) --------
-    prob.eng=khm$target.parameters$prob.eng[as.character(pop$params$CYNOW),,]
-    if(sum(prob.eng>1)>1)
-      stop(paste("Error: probability of engagement >1 in year ",pop$params$CYNOW))
-    prob.eng[prob.eng==Inf]<-0
-    khm.prob.hiv.eng=(1-(1-prob.eng)^(1/12))
-    
-    ##Probability of disengagement (direct input to HIV model) --------
-    prob.diseng=khm$target.parameters$prob.diseng[as.character(pop$params$CYNOW),,]
-    if(sum(prob.diseng>1)>1)
-      stop(paste("Error: probability of disengagement >1 in year ",pop$params$CYNOW))
-    prob.diseng[prob.diseng==Inf]<-0
-    khm.prob.hiv.diseng=(1-(1-prob.diseng)^(1/12))
-    
-    ##Probability of diagnosis (direct input to HIV model) --------
-    prob.diag = khm$target.parameters$prob.diag[as.character(pop$params$CYNOW),,]    
-    if(sum(prob.diag>1)>1)
-      stop(paste("Error: probability of prob.diag >1 in year ",pop$params$CYNOW))
-    prob.diag[prob.diag==Inf]<-0
-    khm.prob.hiv.diag=(1-(1-prob.diag)^(1/12))
-  }
-  }
-  ##### AT EACH TIMESTEP WITHIN THE YEAR:
-  for(i in (1:ANNUAL.TIMESTEPS)){
-    # print(pop$params$TNOW)
-    
-    # 1- modeling cvd events based on current cvd annual risk    # counting new events: marking those who will die after the event
-    pop<-model.cvd.events(pop)
-    
-    # 2- modeling HIV transitions based on khm outputs
-    pop<-model.hiv.transitions(pop,
-                               khm.prob.hiv.inc,
-                               khm.prob.hiv.eng,
-                               khm.prob.hiv.diseng,
-                               khm.prob.hiv.diag)
-    
-    # 3- modeling & removing HIV and CVD deaths
-    pop<-model.hiv.cvd.deaths( pop,
-                               khm.monthly.hiv.mort,
-                               khm.monthly.non.hiv.mort)
-    
-    # MODEL INTERVENTION ------
-    if(ncdScenario>0)
-      pop<-model.ncd.intervention(pop = pop,
-                                  ncdScenario = ncdScenario,
-                                  int.start.year=int.start.year,
-                                  int.end.year=int.end.year,
-                                  pCoverage = pCoverage,
-                                  pNcdTrtInitiation = pNcdTrtInitiation,
-                                  pNcdTrtAdherence = pNcdTrtAdherence,
-                                  pDropOut=pDropOut,
-                                  bAllowReenrollment=bAllowReenrollment)
-    
-    
-    #4- MODEL AGING --------
-    pop$modelAging()
-    
-    #5- MODEL BIRTHS -------
-    {
-      n.births.non.hiv=n.births.non.hiv.per.month[i]
-      n.births.hiv=n.births.hiv.per.month[i]
-      
-      if (n.births.non.hiv>0){
-        vIds = c((pop$params$LAST.PERSON.ID+1): (pop$params$LAST.PERSON.ID+n.births.non.hiv))
-        pop$params$LAST.PERSON.ID=pop$params$LAST.PERSON.ID+n.births.non.hiv
-        vSexes = sample(c(MALE,FEMALE),n.births.non.hiv,prob = c(.5,.5),replace = T) # still 50/50 male/female
-        memberListNew = (mapply(PERSON$new, pop$params$TNOW,
-                                vIds,
-                                vSexes,
-                                0,#age
-                                HIV.NEG,
-                                NCD.NEG)) 
-        pop$addMembers(unlist(memberListNew))
-        # record stats:
-        pop$stats$n.births.non.hiv[pop$params$YNOW]=n.births.non.hiv
-      }
-      if (n.births.hiv>0){
-        vIds = c((pop$params$LAST.PERSON.ID+1): (pop$params$LAST.PERSON.ID+n.births.hiv))
-        pop$params$LAST.PERSON.ID=pop$params$LAST.PERSON.ID+n.births.hiv
-        vSexes = sample(c(MALE,FEMALE),n.births.hiv,prob = c(.5,.5),replace = T)
-        memberListNew = (mapply(PERSON$new,pop$params$TNOW,
-                                vIds,
-                                vSexes,
-                                0,#age
-                                HIV.UNDIAG,
-                                NCD.NEG))  
-        pop$addMembers(memberListNew)
-        # record stats:
-        pop$stats$n.births.hiv[pop$params$YNOW]=n.births.hiv
-        nMaleNewborns=sum(vSexes==MALE)
-        pop$stats$n.hiv.inc["0-4","MALE","HIV.NEG", "NCD.NEG",pop$params$YNOW]=pop$stats$n.hiv.inc["0-4","MALE","HIV.NEG","NCD.NEG",pop$params$YNOW] + nMaleNewborns
-        pop$stats$n.hiv.inc["0-4","FEMALE","HIV.NEG","NCD.NEG",pop$params$YNOW]=pop$stats$n.hiv.inc["0-4","FEMALE","HIV.NEG","NCD.NEG",pop$params$YNOW] + (n.births.hiv-nMaleNewborns)
-      }
-      pop$stats$n.births[pop$params$YNOW]=n.births.non.hiv + n.births.hiv
-    }
-    
-    pop$increaseMonth()
-  }
-  
-  #### AT YEAR's END:
-  ## --MODEL Deaths due to aging out --------
-  pop$model.aging.out()
-  
-  ## -- UPDATE NCD STATES & CVD RISKS FOR NEXT YEAR --------
-  pop<-update.ncd.states(pop)
-  pop<-invisible(set.cvd.risk(pop))
-  ##############################################
-  
-  # END OF YEAR----
-  if (DEBUGMODE) cat("End of year: ",pop$params$CYNOW," --------------------------- \n")
-  # Record annual statistics --------
-  pop$record.annual.stats()
-  #Increment the clock
-  pop$increaseYear()
-  pop
-}
 
 
-# covering a percentage of the population or those that meet certain criteria,
-# screening for NCDs with 100% sensitivity/specificity and starting people on treatment with prob "pNcdTrtInitiation"
-# pNcdTrtInitiation ONLY represents treatment uptake
-# pNcdTrtAdherence now represents medication among those initiated on treatment 
-# assuming re-enrollement for now
-# assuming a combined trt option for hyp.diab; they will discontinue together
-# HIV intervention will run seperately in khm, we will read the input here but dont model explicit HIV intervention
-model.ncd.intervention<-function(pop,
-                                 ncdScenario=0,
-                                 int.start.year, # intervention start year
-                                 int.end.year,#intervention last year
-                                 pCoverage=0, # prop of community screened for ncd
-                                 pNcdTrtInitiation=0, # prop of ncd diag starting successful trt
-                                 pNcdTrtAdherence=0, # prop of ncd trt adhering to medication 
-                                 pDropOut=0, #prob of ncd trt discontinuation
-                                 bAllowReenrollment=TRUE #allowing by default
-){
+## Old tuning code
+if(1==2){
   
-  # BASELINE TREATMENT # 
-  # runs until end of simulation if baseline scenario, runs up until int.start.year if an intervention scenario 
-  # in first year, start by enrolling 7% on treatment
-  if(pop$params$CYNOW == (INITIAL.YEAR+1)) {
+  # stats aren't recorded until the end of the year, need to pull it here to get monthly values (can't do pop$stats$n.state.sizes)
+  n.state.sizes = pop$return.state.size.distribution() # monthly state sizes
+  
+  # re-calculate coverage
+  n.ncd = sum(n.state.sizes[,,,c("NCD.DIAB","NCD.HYP","NCD.DIAB_HYP"),
+                            as.character(pop$params$CYNOW)]) # total number of people with NCDs
+  n.ncd.trt = sum(n.state.sizes[,,,c("NCD.DIAB.TRT","NCD.HYP.TRT","NCD.DIAB_HYP.TRT",
+                                     "NCD.DIAB.TRT.ADH","NCD.HYP.TRT.ADH","NCD.DIAB_HYP.TRT.ADH"),
+                                as.character(pop$params$CYNOW)]) # total number on treatment (adherent or not)
+  n.ncd.untreated = n.ncd - n.ncd.trt # number not on treatment 
+  
+  current.ncd.trt.coverage = n.ncd.trt/n.ncd
+  target.ncd.trt.coverage = pCoverage # 7% 
+  
+  # IF CURRENT TREATMENT GREATER THAN TARGET, model DROPOUTS with probability of the difference between the two 
+  if(current.ncd.trt.coverage>target.ncd.trt.coverage){
     
-    baselineNcdIds=c() # vector of Ids for those eligible for baseline treatment
-    invisible(lapply(c(1:length(pop$members)),function(x){
-      p=pop$members[[x]]
-      if (p$ncdState %in% c(2:4)){ # "NCD.DIAB","NCD.HYP","NCD.DIAB_HYP"
-        baselineNcdIds<<-cbind(baselineNcdIds,x)
-      }}))
+    p.dropout.total.ncd = current.ncd.trt.coverage-target.ncd.trt.coverage # % of those with NCDs needed to drop out 
+    dropout.freq = (p.dropout.total.ncd*n.ncd) # need this number to drop out PER MONTH 
+    p.dropout.treated.ncd = dropout.freq/n.ncd.trt # need this % of those on treatment to drop out PER MONTH
     
-    nToScreen.baseline = round((pCoverage * length(baselineNcdIds))/12) # pCoverage in baseline scenario is 7%; so 7% of people with NCDs are treated 
-    selectedIds.baseline=sample(size = nToScreen.baseline,x = baselineNcdIds,replace = F ) #choose a random set from baseline with NCDs 
+    print(paste0(dropout.freq," needed to drop out monthly to maintain 7% baseline coverage"))
+    invisible(lapply(pop$members,function(p){
+      if(p$ncdState>4) { # only those on treatment 
+        if (runif(1)<(p.dropout.treated.ncd)){
+          #record stats
+          if (p$ncdState %in% c(NCD.DIAB.TRT,NCD.DIAB.TRT.ADH)) pop$record.diab.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+          if (p$ncdState %in% c(NCD.HYP.TRT,NCD.HYP.TRT.ADH)) pop$record.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+          if (p$ncdState %in% c(NCD.DIAB_HYP.TRT,NCD.DIAB_HYP.TRT.ADH)) pop$record.diab.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
+          #model dropout
+          p$model.ncd.trt.dropout()
+        }}}))
     
-    invisible(lapply(selectedIds.baseline,function(x){
-      p=pop$members[[x]]
+  }
+  
+  # IF CURRENT TREATMENT LESS THAN TARGET, model NEW ENROLLMENTS with probability of the difference between the two 
+  if(current.ncd.trt.coverage<target.ncd.trt.coverage){
+    
+    p.enroll.total.ncd = target.ncd.trt.coverage-current.ncd.trt.coverage # % of those with NCDs needed to enroll 
+    enroll.freq = (p.enroll.total.ncd*n.ncd) # need this number to enroll PER MONTH
+    p.enroll.untreated.ncd = enroll.freq/n.ncd.untreated # need this % of those NOT on treatment to enroll
+    
+    print(paste0(enroll.freq," needed to enroll monthly to maintain 7% baseline coverage"))
+    invisible(lapply(pop$members,function(p){
       
-      pop$record.ncd.screening(p$agegroup,p$sex,p$hivState,p$ncdState)
       tnow=pop$params$TNOW
       
       # NCD screening & treatment initiation (combined at baseline), and treatment adherence 
-      if(p$ncdState==NCD.DIAB){
-        pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
-        p$model.diab.diag(tnow)
-        
-        #if(runif(1) < pNcdTrtInitiation){ # for baseline, DON'T model initiation separately - baseline combines coverage & initiation into one (this is 1 anyway)
-        if(runif(1) < pNcdTrtAdherence){
-          pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
-          p$start.diab.trt.adherence(tnow)
-        } else {
-          pop$record.diab.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-          p$start.diab.trt(tnow)
-        }
-        #}
-      }
-      
-      if(p$ncdState==NCD.HYP){
-        pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
-        p$model.hyp.diag(tnow)
-        
-        #if(runif(1) < pNcdTrtInitiation){
-        if(runif(1) < pNcdTrtAdherence){
-          pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
-          p$start.hyp.trt.adherence(tnow)
-        } else {
-          pop$record.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-          p$start.hyp.trt(tnow)  
-        }
-        # }
-      }
-      
-      if(p$ncdState==NCD.DIAB_HYP){
-        pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
-        p$model.diab.hyp.diag(tnow)
-        
-        #if(runif(1) < pNcdTrtInitiation){
-        if(runif(1) < pNcdTrtAdherence){
-          pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
-          p$start.diab.hyp.trt.adherence(tnow)
-        } else {
-          pop$record.diab.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-          p$start.diab.hyp.trt(tnow)
-        }
-        #}
-      }
-    }))
-    
-  } else if(pop$params$CYNOW > (INITIAL.YEAR+1)){
-    
-    # if it's before the intervention start year, OR it's the baseline scenario 
-    if((pop$params$CYNOW < int.start.year) | (ncdScenarios[[ncdScenario]]$id==1)){
-      
-      # stats aren't recorded until the end of the year, need to pull it here to get monthly values (can't do pop$stats$n.state.sizes)
-      n.state.sizes = pop$return.state.size.distribution() # monthly state sizes
-      
-      # re-calculate coverage
-      n.ncd = sum(n.state.sizes[,,,c("NCD.DIAB","NCD.HYP","NCD.DIAB_HYP"),
-                                          as.character(pop$params$CYNOW)]) # total number of people with NCDs
-      n.ncd.trt = sum(n.state.sizes[,,,c("NCD.DIAB.TRT","NCD.HYP.TRT","NCD.DIAB_HYP.TRT",
-                                                   "NCD.DIAB.TRT.ADH","NCD.HYP.TRT.ADH","NCD.DIAB_HYP.TRT.ADH"),
-                                              as.character(pop$params$CYNOW)]) # total number on treatment (adherent or not)
-      n.ncd.untreated = n.ncd - n.ncd.trt # number not on treatment 
-      
-      current.ncd.trt.coverage = n.ncd.trt/n.ncd
-      target.ncd.trt.coverage = pCoverage # 7% 
-      
-      # IF CURRENT TREATMENT GREATER THAN TARGET, model DROPOUTS with probability of the difference between the two 
-      if(current.ncd.trt.coverage>target.ncd.trt.coverage){
-        
-        p.dropout.total.ncd = current.ncd.trt.coverage-target.ncd.trt.coverage # % of those with NCDs needed to drop out 
-        dropout.freq = (p.dropout.total.ncd*n.ncd)/12 # need this number to drop out PER MONTH 
-        p.dropout.treated.ncd = dropout.freq/n.ncd.trt # need this % of those on treatment to drop out PER MONTH
-        
-        print(paste0(dropout.freq," needed to drop out monthly to maintain 7% baseline coverage"))
-        invisible(lapply(pop$members,function(p){
-          if(p$ncdState>4) { # only those on treatment 
-            if (runif(1)<(p.dropout.treated.ncd)){
-              #record stats
-              if (p$ncdState==NCD.DIAB.TRT) pop$record.diab.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
-              if (p$ncdState==NCD.HYP.TRT) pop$record.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
-              if (p$ncdState==NCD.DIAB_HYP.TRT) pop$record.diab.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
-              #model dropout
-              p$model.ncd.trt.dropout()
-            }}}))
-        
-      }
-      
-      # IF CURRENT TREATMENT LESS THAN TARGET, model NEW ENROLLMENTS with probability of the difference between the two 
-      if(current.ncd.trt.coverage<=target.ncd.trt.coverage){
-        
-        p.enroll.total.ncd = target.ncd.trt.coverage-current.ncd.trt.coverage # % of those with NCDs needed to enroll 
-        enroll.freq = (p.enroll.total.ncd*n.ncd)/12 # need this number to enroll PER MONTH
-        p.enroll.untreated.ncd = enroll.freq/n.ncd.untreated # need this % of those NOT on treatment to enroll
-        
-        print(paste0(enroll.freq," needed to enroll monthly to maintain 7% baseline coverage"))
-        invisible(lapply(pop$members,function(p){
-          pop$record.ncd.screening(p$agegroup,p$sex,p$hivState,p$ncdState)
-          tnow=pop$params$TNOW
+      if(runif(1) < p.enroll.untreated.ncd){ 
+        if(p$ncdState==NCD.DIAB){
+          pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+          p$model.diab.diag(tnow)
           
-          # NCD screening & treatment initiation (combined at baseline), and treatment adherence 
-          if(p$ncdState==NCD.DIAB){
-            pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
-            p$model.diab.diag(tnow)
-            
-            if(runif(1) < p.enroll.untreated.ncd){ 
-              if(runif(1) < pNcdTrtAdherence){
-                pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.diab.trt.adherence(tnow)
-              } else {
-                pop$record.diab.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.diab.trt(tnow)
-              }
-            }
+          if(runif(1) < pNcdTrtAdherence){
+            pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+            p$start.diab.trt.adherence(tnow)
+          } else {
+            pop$record.diab.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+            p$start.diab.trt(tnow)
           }
-          
-          if(p$ncdState==NCD.HYP){
-            pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
-            p$model.hyp.diag(tnow)
-            
-            if(runif(1) < p.enroll.untreated.ncd){
-              if(runif(1) < pNcdTrtAdherence){
-                pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.hyp.trt.adherence(tnow)
-              } else {
-                pop$record.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.hyp.trt(tnow)  
-              }
-            }
-          }
-          
-          if(p$ncdState==NCD.DIAB_HYP){
-            pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
-            p$model.diab.hyp.diag(tnow)
-            
-            if(runif(1) < p.enroll.untreated.ncd){
-              if(runif(1) < pNcdTrtAdherence){
-                pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.diab.hyp.trt.adherence(tnow)
-              } else {
-                pop$record.diab.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.diab.hyp.trt(tnow)
-              }
-            }
-          }
-        }))
-        
-        
-      }
-      
-    }
-    
-  # INTERVENTION SCENARIOS # 
-  if(ncdScenarios[[ncdScenario]]$id!=1){ 
-    #has the intervention begun?
-    if(pop$params$CYNOW >= int.start.year) {
-      
-      # model drop outs
-      invisible(lapply(pop$members,function(p){
-        if(p$ncdState>4) {
-          if (runif(1)<pDropOut){
-            #record stats
-            if (p$ncdState==NCD.DIAB.TRT) pop$record.diab.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
-            if (p$ncdState==NCD.HYP.TRT) pop$record.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
-            if (p$ncdState==NCD.DIAB_HYP.TRT) pop$record.diab.hyp.trt.dropout(p$agegroup,p$sex,p$hivState,p$ncdState)
-            #model dropout
-            p$model.ncd.trt.dropout()
-          }}
-        
-      }))
-      
-      # model new enrollments
-      if(pop$params$CYNOW <= int.end.year){
-        selectedIds.clinic=NULL
-        selectedIds.community=NULL
-        
-        # intervention focused at HIV clinic (among HIV.ENG)
-        if ("clinic" %in% ncdScenarios[[ncdScenario]]$location) { 
-          
-          vIds=c() # vector of Ids for those eligible to receive the intervention 
-          invisible(lapply(c(1:length(pop$members)),function(x){
-            p=pop$members[[x]]
-            if (p$hivState==HIV.ENG){
-              vIds<<-cbind(vIds,x)
-            }}))
-          
-          nToScreen.clinic = round(pCoverage * length(vIds)) #estimate the number of people that will be screened
-          selectedIds.clinic=sample(size = nToScreen.clinic,x = vIds,replace = F ) #choose a random set from the clinic
         }
         
-        #intervention focused at the community level
-        else { 
-          nToScreen.community = round(pCoverage * length(pop$members)) #estimate the number of people that will be screened
-          selectedIds.community=sample(size = nToScreen.community,x = length(pop$members),replace = F ) #choose a random set from the community
+        if(p$ncdState==NCD.HYP){
+          pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+          p$model.hyp.diag(tnow)
+          
+          if(runif(1) < pNcdTrtAdherence){
+            pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+            p$start.hyp.trt.adherence(tnow)
+          } else {
+            pop$record.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+            p$start.hyp.trt(tnow)  
+          }
         }
         
-        selectedIds = unique(c(selectedIds.clinic,selectedIds.community))
-        
-        #loop over those selected
-        invisible(lapply(selectedIds,function(x){
-          p=pop$members[[x]]
-          #should exclude those previously screened, with existing diag, or currently on trt?
-          # if (bAllowReenrollment)  continue #'@MS: we are not using this parameter for now
+        if(p$ncdState==NCD.DIAB_HYP){
+          pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+          p$model.diab.hyp.diag(tnow)
           
-          pop$record.ncd.screening(p$agegroup,p$sex,p$hivState,p$ncdState)
-          tnow=pop$params$TNOW
-          
-          # NCD screening, treatment initiation, and treatment adherence 
-          if(p$ncdState ==NCD.DIAB){
-            pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
-            p$model.diab.diag(tnow)
-            
-            if(runif(1) < pNcdTrtInitiation){
-              if(runif(1) < pNcdTrtAdherence){
-                pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.diab.trt.adherence(tnow)
-              } else {
-                pop$record.diab.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.diab.trt(tnow)
-              }
-            }}
-          
-          if(p$ncdState ==NCD.HYP){
-            pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
-            p$model.hyp.diag(tnow)
-            
-            if(runif(1) < pNcdTrtInitiation){
-              if(runif(1) < pNcdTrtAdherence){
-                pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.hyp.trt.adherence(tnow)
-              } else {
-                pop$record.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.hyp.trt(tnow)  
-              }
-            }}
-          
-          if(p$ncdState ==NCD.DIAB_HYP){
-            pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
-            p$model.diab.hyp.diag(tnow)
-            
-            if(runif(1) < pNcdTrtInitiation){
-              if(runif(1) < pNcdTrtAdherence){
-                pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.diab.hyp.trt.adherence(tnow)
-              } else {
-                pop$record.diab.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
-                p$start.diab.hyp.trt(tnow)
-              }
-            }}
-        }))
+          if(runif(1) < pNcdTrtAdherence){
+            pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
+            p$start.diab.hyp.trt.adherence(tnow)
+          } else {
+            pop$record.diab.hyp.trt(p$agegroup,p$sex,p$hivState,p$ncdState)
+            p$start.diab.hyp.trt(tnow)
+          }
+        }
       }
-    }
-  }
-  }
-  
-  pop
+    })) 
+  } 
 }
-
-
-
-# DON'T THINK WE NEED THIS FUNCTION 
-#' run.one.year.no.int<-function(pop){ 
-#'   #### AT YEAR's BEGINNING:computing event probabilities from KHM
-#'   khm=pop$params$khm
-#'   ###computing prob of death
-#'   { 
-#'     ##Probability of HIV mortality (estimated via # events/ elig pop) --------
-#'     n.hiv.pos = apply(khm$population[as.character(pop$params$CYNOW-1),-1,,],c(2:3),sum) # extract all but hiv.negative, sum over hiv states
-#'     target.hiv.mort = khm$hiv.mortality[as.character(pop$params$CYNOW),,] # pull out current year; dimensions are year, age, sex
-#'     n.hiv.pos.now = apply(khm$population[as.character(pop$params$CYNOW),-1,,],c(2:3),sum)
-#'     #we are using average to approximate the integral
-#'     # prob.hiv.mort=target.hiv.mort/((n.hiv.pos + n.hiv.pos.now)/2) 
-#'     prob.hiv.mort=target.hiv.mort/(n.hiv.pos.now+target.hiv.mort)
-#'     if(sum(prob.hiv.mort>1)>1)
-#'       stop(paste("Error: probability of prob.hiv.mort >1 in year ",pop$params$CYNOW))
-#'     prob.hiv.mort[prob.hiv.mort==Inf]<-0
-#'     khm.annual.hiv.mort=prob.hiv.mort
-#'     khm.monthly.hiv.mort=(1-(1-prob.hiv.mort)^(1/12))
-#'     
-#'     ##Probability of non.HIV mortality (estimated via # events/ elig pop) --------
-#'     n.pop = apply(khm$population[as.character(pop$params$CYNOW-1),,,],c(2:3),sum) # extract all population, sum over hiv states
-#'     target.non.hiv.mort = khm$non.hiv.mortality[as.character(pop$params$CYNOW),,] # pull out current year; dimensions are year, age, sex
-#'     n.pop.now = apply(khm$population[as.character(pop$params$CYNOW),,,],c(2:3),sum)
-#'     #we are using average to approximate the integral
-#'     # prob.non.hiv.mort=target.non.hiv.mort/((n.pop + n.pop.now)/2) # denominator is now population as well as aging in - aging out 
-#'     prob.non.hiv.mort=target.non.hiv.mort/( n.pop.now+target.non.hiv.mort)
-#'     if(sum(prob.non.hiv.mort>1)>1){
-#'       browser()
-#'       stop(paste("Error: probability of prob.non.hiv.mort >1 in year ",pop$params$CYNOW))
-#'     }
-#'     prob.non.hiv.mort[prob.non.hiv.mort==Inf]<-0
-#'     khm.annual.non.hiv.mort=prob.non.hiv.mort
-#'     khm.monthly.non.hiv.mort=(1-(1-prob.non.hiv.mort)^(1/12))
-#'     
-#'   }
-#'   ###computing number of births (and distributing them over 12 months)
-#'   {
-#'     # non-HIV births
-#'     absolute.n.births.non.hiv=khm$target.parameters$non.hiv.births[as.character(pop$params$CYNOW)] # total non HIV births from HIV model
-#'     non.hiv.births.scalar = absolute.n.births.non.hiv/sum(khm$population[as.character(pop$params$CYNOW),,,]) # scaled to pop size from HIV model
-#'     n.births.non.hiv = round(non.hiv.births.scalar*length(pop$members),0) # re-scaled to pop size from NCD model
-#'     #distribute births over months
-#'     n.births.non.hiv.per.month=rep(0,ANNUAL.TIMESTEPS)
-#'     if(n.births.non.hiv>0)
-#'       n.births.non.hiv.per.month=as.vector(tabulate(sample(size = n.births.non.hiv,x = c(1:ANNUAL.TIMESTEPS),replace = T),nbins = 12))
-#'     
-#'     # HIV births - putting into undiagnosed for now
-#'     absolute.n.births.hiv=khm$target.parameters$hiv.births[as.character(pop$params$CYNOW)] # total HIV births from HIV model
-#'     hiv.births.scalar = absolute.n.births.hiv/sum(khm$population[as.character(pop$params$CYNOW),,,]) # scaled to pop size from HIV model
-#'     n.births.hiv = round(hiv.births.scalar*length(pop$members),0) # re-scaled to pop size from NCD mode
-#'     #distribute births over months
-#'     n.births.hiv.per.month=rep(0,ANNUAL.TIMESTEPS)
-#'     if(n.births.hiv>0)
-#'       n.births.hiv.per.month=as.vector(tabulate(sample(size = n.births.hiv,x = c(1:ANNUAL.TIMESTEPS),replace = T),nbins = 12))
-#'   }
-#'   ###computing care cascade prob of events
-#'   {
-#'     ##Probability of incidence (estimated via # events/ elig pop) --------
-#'     n.hiv.neg = khm$population[as.character(pop$params$CYNOW-1),"HIV.NEG",,]
-#'     target.inc = khm$incidence[as.character(pop$params$CYNOW),,] # pull out current year; dimensions are year, age, sex
-#'     n.hiv.neg.now = khm$population[as.character(pop$params$CYNOW),"HIV.NEG",,]
-#'     delta = n.hiv.neg.now - n.hiv.neg # change in hiv negative population (aging in - aging out - deaths - hiv incidence)
-#'     delta = delta + target.inc
-#'     #'@MS: maybe change later?
-#'     prob.inc=target.inc/(n.hiv.neg + delta)
-#'     if(sum(prob.inc>1)>1)
-#'       stop(paste("Error: probability of prob.inc >1 in year ",pop$params$CYNOW))
-#'     prob.inc[prob.inc==Inf]<-0
-#'     khm.prob.hiv.inc=(1-(1-prob.inc)^(1/12))
-#'     
-#'     ##Probability of engagement (direct input to HIV model) --------
-#'     prob.eng=khm$target.parameters$prob.eng[as.character(pop$params$CYNOW),,]
-#'     if(sum(prob.eng>1)>1)
-#'       stop(paste("Error: probability of engagement >1 in year ",pop$params$CYNOW))
-#'     prob.eng[prob.eng==Inf]<-0
-#'     khm.prob.hiv.eng=(1-(1-prob.eng)^(1/12))
-#'     
-#'     ##Probability of disengagement (direct input to HIV model) --------
-#'     prob.diseng=khm$target.parameters$prob.diseng[as.character(pop$params$CYNOW),,]
-#'     if(sum(prob.diseng>1)>1)
-#'       stop(paste("Error: probability of disengagement >1 in year ",pop$params$CYNOW))
-#'     prob.diseng[prob.diseng==Inf]<-0
-#'     khm.prob.hiv.diseng=(1-(1-prob.diseng)^(1/12))
-#'     
-#'     ##Probability of diagnosis (direct input to HIV model) --------
-#'     prob.diag = khm$target.parameters$prob.diag[as.character(pop$params$CYNOW),,]    
-#'     if(sum(prob.diag>1)>1)
-#'       stop(paste("Error: probability of prob.diag >1 in year ",pop$params$CYNOW))
-#'     prob.diag[prob.diag==Inf]<-0
-#'     khm.prob.hiv.diag=(1-(1-prob.diag)^(1/12))
-#'   }
-#'   
-#'   ##### AT EACH TIMESTEP WITHIN THE YEAR:
-#'   for(i in (1:ANNUAL.TIMESTEPS)){
-#'     # CVD events and HIV transitions are independent, so the order doesn't matter    # we model HIV deaths based on new HIV states after new transitions are modeled
-#'     
-#'     # 1- modeling cvd events based on current cvd annual risk    # counting new events: marking those who will die after the event
-#'     pop<-model.cvd.events(pop)
-#'     
-#'     # 2- modeling HIV transitions based on khm outputs
-#'     pop<-model.hiv.transitions(pop,
-#'                                khm.prob.hiv.inc,
-#'                                khm.prob.hiv.eng,
-#'                                khm.prob.hiv.diseng,
-#'                                khm.prob.hiv.diag)
-#'     
-#'     # 3- modeling & removing HIV and CVD deaths
-#'     pop<-model.hiv.cvd.deaths( pop,
-#'                                khm.monthly.hiv.mort,
-#'                                khm.monthly.non.hiv.mort)
-#'     
-#'     ## MODEL AGING --------
-#'     pop$modelAging()
-#'     
-#'     ## MODEL BIRTHS -------
-#'     {
-#'       n.births.non.hiv=n.births.non.hiv.per.month[i]
-#'       n.births.hiv=n.births.hiv.per.month[i]
-#'       
-#'       if (n.births.non.hiv>0){
-#'         vIds = c((pop$params$LAST.PERSON.ID+1): (pop$params$LAST.PERSON.ID+n.births.non.hiv))
-#'         pop$params$LAST.PERSON.ID=pop$params$LAST.PERSON.ID+n.births.non.hiv
-#'         vSexes = sample(c(MALE,FEMALE),n.births.non.hiv,prob = c(.5,.5),replace = T) # still 50/50 male/female
-#'         memberListNew = (mapply(PERSON$new, pop$params$TNOW,
-#'                                 vIds,
-#'                                 vSexes,
-#'                                 0,#age
-#'                                 HIV.NEG,
-#'                                 NCD.NEG)) 
-#'         pop$addMembers(unlist(memberListNew))
-#'         # record stats:
-#'         pop$stats$n.births.non.hiv[pop$params$YNOW]=n.births.non.hiv
-#'       }
-#'       if (n.births.hiv>0){
-#'         vIds = c((pop$params$LAST.PERSON.ID+1): (pop$params$LAST.PERSON.ID+n.births.hiv))
-#'         pop$params$LAST.PERSON.ID=pop$params$LAST.PERSON.ID+n.births.hiv
-#'         vSexes = sample(c(MALE,FEMALE),n.births.hiv,prob = c(.5,.5),replace = T)
-#'         memberListNew = (mapply(PERSON$new,pop$params$TNOW,
-#'                                 vIds,
-#'                                 vSexes,
-#'                                 0,#age
-#'                                 HIV.UNDIAG,
-#'                                 NCD.NEG))  
-#'         pop$addMembers(memberListNew)
-#'         # record stats:
-#'         pop$stats$n.births.hiv[pop$params$YNOW]=n.births.hiv
-#'         nMaleNewborns=sum(vSexes==MALE)
-#'         pop$stats$n.hiv.inc["0-4","MALE","HIV.NEG", "NCD.NEG",pop$params$YNOW]=pop$stats$n.hiv.inc["0-4","MALE","HIV.NEG","NCD.NEG",pop$params$YNOW] + nMaleNewborns
-#'         pop$stats$n.hiv.inc["0-4","FEMALE","HIV.NEG","NCD.NEG",pop$params$YNOW]=pop$stats$n.hiv.inc["0-4","FEMALE","HIV.NEG","NCD.NEG",pop$params$YNOW] + (n.births.hiv-nMaleNewborns)
-#'       }
-#'       pop$stats$n.births[pop$params$YNOW]=n.births.non.hiv + n.births.hiv
-#'     }
-#'     
-#'     pop$increaseMonth()
-#'     
-#'     
-#'     # Model intervention???
-#'   }
-#'   
-#'   #### AT YEAR's END:
-#'   ## --MODEL Deaths due to aging out --------
-#'   pop$model.aging.out()
-#'   
-#'   ## -- UPDATE NCD STATES & CVD RISKS FOR NEXT YEAR --------
-#'   pop<-update.ncd.states(pop)
-#'   pop<-invisible(set.cvd.risk(pop))
-#'   ##############################################
-#'   
-#'   ##Model the intervention??? 
-#'   
-#'   # END OF YEAR----
-#'   if (DEBUGMODE) cat("End of year: ",pop$params$CYNOW," --------------------------- \n")
-#'   # Record annual statistics --------
-#'   pop$record.annual.stats()
-#'   #Increment the clock
-#'   pop$increaseYear()
-#'   pop
-#' }
