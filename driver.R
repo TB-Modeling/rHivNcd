@@ -16,6 +16,7 @@ library(data.table)
 # LIST OF NCD SCENARIOS
 #coverage and dropouts should be specified as monthly values - but treatment initiation and adherence don't have to be? 
 pMonthlyCoverage=0.1/12#assuming 10% annual coverage 
+STABLE.NCD.COVERAGE = 0.07
 
 # NEW NCD SCENARIOS
 baselineValues = list(
@@ -190,24 +191,28 @@ if (1==1){
       set.seed(rep)
       print(paste("replication ",rep," scenario", ncdScenarios[[ncdId]]$id, "starting..."))
 
-      # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
+      # create pop at the end of 2014; set up hiv/ncd states; set up ncd treatment; records stats and increment the year to 2015
       pop<-initialize.simulation(id = rep,
                                  n = POP.SIZE,
                                  rep=rep,
                                  ncdScenario = ncdScenarios[[ncdId]]$id,
-                                 saScenario = 0)
-      #run sims
-
+                                 saScenario = 0,
+                                 stable.ncd.coverage = STABLE.NCD.COVERAGE) # this function now also initializes NCD treatment 
+      
       while(pop$params$CYNOW<= END.YEAR)
-        run.one.year.int(pop,
-                         ncdScenario =ncdScenarios[[ncdId]]$id,
-                         int.start.year = 2023,
-                         int.end.year = 2030,
-                         pCoverage = ncdScenarios[[ncdId]]$pCoverage,
-                         pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
-                         pNcdTrtAdherence = ncdScenarios[[ncdId]]$pNcdTrtAdherence,
-                         pDropOut=ncdScenarios[[ncdId]]$pDropOut
-        )
+        run.one.year.baseline(pop,
+                              p.monthly.baseline.enrollment, # sample this during calibration 
+                              p.monthly.baseline.dropout, # sample this during calibration 
+                              pNcdTrtAdherence=ncdScenarios[[ncdId]]$pNcdTrtAdherence)
+        # run.one.year.int(pop,
+        #                  ncdScenario =ncdScenarios[[ncdId]]$id,
+        #                  int.start.year = 2023,
+        #                  int.end.year = 2030,
+        #                  pCoverage = ncdScenarios[[ncdId]]$pCoverage,
+        #                  pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
+        #                  pNcdTrtAdherence = ncdScenarios[[ncdId]]$pNcdTrtAdherence,
+        #                  pDropOut=ncdScenarios[[ncdId]]$pDropOut
+        # )
 
       #saving population stat and param files separately
       x=0
