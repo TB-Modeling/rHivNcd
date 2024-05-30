@@ -80,9 +80,9 @@ POPULATION<-R6Class("POPULATION",
                         ynow=self$params$YNOW
                         current.state.sizes = self$stats$n.state.sizes[,,,,ynow]
                         
-                        n.ncd = sum(current.state.sizes[,,,c("NCD.DIAB","NCD.HYP","NCD.DIAB_HYP"),ynow]) 
+                        n.ncd = sum(current.state.sizes[,,,c("NCD.DIAB","NCD.HYP","NCD.DIAB_HYP")]) 
                         n.ncd.trt = sum(current.state.sizes[,,,c("NCD.DIAB.TRT","NCD.HYP.TRT","NCD.DIAB_HYP.TRT",
-                                                           "NCD.DIAB.TRT.ADH","NCD.HYP.TRT.ADH","NCD.DIAB_HYP.TRT.ADH"), ynow]) 
+                                                           "NCD.DIAB.TRT.ADH","NCD.HYP.TRT.ADH","NCD.DIAB_HYP.TRT.ADH")]) 
                         
                         ncd.trt.coverage = n.ncd.trt/n.ncd
                         self$stats$ncd.trt.coverage[ynow] = ncd.trt.coverage

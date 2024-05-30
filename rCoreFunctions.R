@@ -13,7 +13,8 @@ initialize.simulation <- function( id=0,
                                    rep=0, #replication id
                                    ncdScenario=0, #ncd scenario
                                    saScenario=0, #sa scenario
-                                   stable.ncd.coverage=0 # stable ncd treatment coverage 
+                                   stable.ncd.coverage=0, # stable ncd treatment coverage
+                                   p.baseline.adherence=0
 ){
   # 1- create an empty population
   pop<-POPULATION$new(id = id,
@@ -66,7 +67,7 @@ initialize.simulation <- function( id=0,
   #
   pop<-invisible(set.initial.hiv.status(pop ))
   pop<-invisible(set.cvd.risk(pop))
-  pop<-invisible(initialize.ncd.treatment(stable.ncd.coverage))
+  pop<-invisible(initialize.ncd.treatment(pop,stable.ncd.coverage,p.baseline.adherence))
   pop$record.annual.stats()
   pop$increaseYear() 
   #
@@ -80,7 +81,7 @@ initialize.simulation <- function( id=0,
 run.one.year.baseline <-function(pop,
                                  p.monthly.baseline.enrollment, # sample this during calibration 
                                  p.monthly.baseline.dropout, # sample this during calibration 
-                                 pNcdTrtAdherence, # prop of ncd trt adhering to medication 
+                                 p.baseline.adherence # prop of ncd trt adhering to medication 
 ){ 
   #### AT YEAR's BEGINNING: computing event probabilities from KHM
   khm<-compute.khm.probabilities(pop)
@@ -108,7 +109,7 @@ run.one.year.baseline <-function(pop,
     pop<-model.ncd.baseline(pop,
                             p.monthly.baseline.enrollment,
                             p.monthly.baseline.dropout,
-                            pNcdTrtAdherence)
+                            p.baseline.adherence)
     
     
     #4- MODEL AGING --------
@@ -324,7 +325,9 @@ set.cvd.risk = function(pop){
 }
 
 # sets initial ncd treatment coverage (7%)
-initialize.ncd.treatment = function(stable.ncd.coverage){
+initialize.ncd.treatment = function(pop,
+                                    stable.ncd.coverage,
+                                    p.baseline.adherence){
   baselineNcdIds=c() # vector of Ids for those eligible for baseline treatment
   invisible(lapply(c(1:length(pop$members)),function(x){
     p=pop$members[[x]]
@@ -344,7 +347,7 @@ initialize.ncd.treatment = function(stable.ncd.coverage){
       pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
       p$model.diab.diag(tnow)
       
-      if(runif(1) < pNcdTrtAdherence){
+      if(runif(1) < p.baseline.adherence){
         pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$start.diab.trt.adherence(tnow)
       } else {
@@ -357,7 +360,7 @@ initialize.ncd.treatment = function(stable.ncd.coverage){
       pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
       p$model.hyp.diag(tnow)
       
-      if(runif(1) < pNcdTrtAdherence){
+      if(runif(1) < p.baseline.adherence){
         pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$start.hyp.trt.adherence(tnow)
       } else {
@@ -370,7 +373,7 @@ initialize.ncd.treatment = function(stable.ncd.coverage){
       pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
       p$model.diab.hyp.diag(tnow)
       
-      if(runif(1) < pNcdTrtAdherence){
+      if(runif(1) < p.baseline.adherence){
         pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$start.diab.hyp.trt.adherence(tnow)
       } else {
@@ -391,7 +394,7 @@ initialize.ncd.treatment = function(stable.ncd.coverage){
 model.ncd.baseline = function(pop,
                               p.monthly.baseline.enrollment,
                               p.monthly.baseline.dropout,
-                              pNcdTrtAdherence){
+                              p.baseline.adherence){
   
   # model drop outs
   invisible(lapply(pop$members,function(p){
@@ -415,7 +418,7 @@ model.ncd.baseline = function(pop,
         pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$model.diab.diag(tnow)
         
-        if(runif(1) < pNcdTrtAdherence){
+        if(runif(1) < p.baseline.adherence){
           pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
           p$start.diab.trt.adherence(tnow)
         } else {
@@ -428,7 +431,7 @@ model.ncd.baseline = function(pop,
         pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$model.hyp.diag(tnow)
         
-        if(runif(1) < pNcdTrtAdherence){
+        if(runif(1) < p.baseline.adherence){
           pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
           p$start.hyp.trt.adherence(tnow)
         } else {
@@ -441,7 +444,7 @@ model.ncd.baseline = function(pop,
         pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$model.diab.hyp.diag(tnow)
         
-        if(runif(1) < pNcdTrtAdherence){
+        if(runif(1) < p.baseline.adherence){
           pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
           p$start.diab.hyp.trt.adherence(tnow)
         } else {
@@ -452,7 +455,7 @@ model.ncd.baseline = function(pop,
     }
   })) 
   
-  pop$return.ncd.trt.coverage(self$params$YNOW)
+  pop$return.ncd.trt.coverage()
    
   pop
 }

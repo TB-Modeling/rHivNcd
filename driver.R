@@ -181,7 +181,7 @@ if (1==2) {
 # MULTI REPS
 if (1==1){
   vReps=1:1 #reps
-  vNcdScenarios=1:8 #scenarios
+  vNcdScenarios=1#:8 #scenarios
   print("running models sequentially ....")
   nReps=length(vReps)
   nNcdScenarios=length(vNcdScenarios)
@@ -201,9 +201,9 @@ if (1==1){
       
       while(pop$params$CYNOW<= END.YEAR)
         run.one.year.baseline(pop,
-                              p.monthly.baseline.enrollment, # sample this during calibration 
-                              p.monthly.baseline.dropout, # sample this during calibration 
-                              pNcdTrtAdherence=ncdScenarios[[ncdId]]$pNcdTrtAdherence)
+                              p.monthly.baseline.enrollment=(.1/12), # sample this during calibration 
+                              p.monthly.baseline.dropout=(.1/12), # sample this during calibration 
+                              p.baseline.adherence=baselineValues$adherence) 
         # run.one.year.int(pop,
         #                  ncdScenario =ncdScenarios[[ncdId]]$id,
         #                  int.start.year = 2023,
