@@ -4,8 +4,8 @@
 #  
 #####################################
 print("Sourcing GlobalEnvironment.R ... ")
-############################################################################################################################################
 # GLOBAL PARAMETERS ARE CONSTANT. THEY ARE VISIBLE TO ALL CLASSES AND FUNCTIONS AND DONT CHANGE
+
 cat("Setting up global parameters .... \n")
 DEBUGMODE=T
 
@@ -18,7 +18,7 @@ AGE.INTERVAL=5
 MIN.AGE=0
 MAX.AGE=85*12
 
-POP.SIZE= 1000 # 500000
+POP.SIZE= 100 # 500000
 
 #
 FEMALE=1
@@ -45,7 +45,6 @@ DEATH.HIV=2
 DEATH.STROKE=3
 DEATH.MI=4
 
-
 DIM.NAMES.SEX=c("FEMALE","MALE")
 DIM.NAMES.AGE=c("0-4","5-9","10-14","15-19", "20-24","25-29","30-34","35-39","40-44","45-49","50-54","55-59",
                 "60-64","65-69","70-74","75-79","80-85")
@@ -71,6 +70,96 @@ DIM.AGE=length(DIM.NAMES.AGE)
 DIM.HIV=length(DIM.NAMES.HIV)
 DIM.NCD=length(DIM.NAMES.NCD)
 DIM.YEAR=length(DIM.NAMES.YEAR)
+
+# NEW NCD SCENARIOS 
+BASELINE.VALUES = list(
+  coverage = .07, # Hickey et al, 2021; Table 1: 7% self-reported baseline HTN treatment; this is post-dropout 
+  treatment = 1, 
+  adherence = 0.40, # Hickey et al, 2021: ~40% of non-intervention group had controlled hypertension ("Among those engaged in care, 56% of intervention group participants and 43% of control group participants had controlled hypertension at year 3")
+  dropout = NULL # at baseline, model dropouts to maintain 7% on treatment
+  # 0.80/12 # Hickey et al, 2021: ~20% of control group who linked to care attended 1 visit per year for each of 3 years of follow up
+)
+
+pMonthlyCoverage=0.1/12 #assuming 10% annual coverage 
+
+# LIST OF NCD SCENARIOS
+ncdScenarios = list(
+  "baseline" = list(id = 1, # baseline 
+                    location = "community", # this is new
+                    alias = "baseline", # this is new
+                    pCoverage = BASELINE.VALUES$coverage, 
+                    pNcdTrtInitiation = BASELINE.VALUES$treatment, 
+                    # previously: "combination of uptake and adherence", NOW: just uptake (model adherence separately)
+                    # but for baseline, this is set to 1 because we are combining coverage and treatment (7%)
+                    pNcdTrtAdherence = BASELINE.VALUES$adherence, # this is new
+                    pDropOut = BASELINE.VALUES$dropout,
+                    hivScenario = "noint" # this is new
+  ),
+  "Scen.1a" = list(id = 2, # AMPATH
+                   location = "clinic",
+                   alias = "clinic.AMPATH",
+                   pCoverage = pMonthlyCoverage, # need to decide on this 
+                   pNcdTrtInitiation = 0.35, # Hickey et al, 2021: 35% of control group linked to care
+                   pNcdTrtAdherence = BASELINE.VALUES$adherence + 0.10, # 10% increase in adherence (--> 50%)
+                   pDropOut = (0.80/12) - (0.1/12), # 10% increase in retention (--> 70% dropout)
+                   hivScenario = "noint"
+  ),
+  "Scen.1b" = list(id = 3, # SEARCH telehealth (clinic)
+                   location = "clinic",
+                   alias = "clinic.telehealth",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75, # SEARCH telehealth: among those eligible, % linked and randomized 
+                   pNcdTrtAdherence = BASELINE.VALUES$adherence + 0.40, # 40% increase in adherence (--> 80%) 
+                   pDropOut = (0.80/12) - (0.3/12), # 30% increase in retention (--> 50% dropout)
+                   hivScenario = "noint"
+  ),
+  "Scen.1c" = list(id = 4, # hypothetical, max NCD and HIV
+                   location = "clinic",
+                   alias = "clinic.max",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75,
+                   pNcdTrtAdherence = 1, # BASELINE.VALUES$adherence + 0.75, # this is >100%
+                   pDropOut = (0.80/12) - (0.75/12), # 75% increase in retention (--> 5% dropout)
+                   hivScenario = "comp" # this should be 90/90/90 targets - check HIV model scenarios ("comp" = comprehensive)
+  ),
+  "Scen.2a" = list(id = 5, # SEARCH telehealth (community)
+                   location = "community",
+                   alias = "comm.telehealth",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75,
+                   pNcdTrtAdherence = BASELINE.VALUES$adherence + 0.40,
+                   pDropOut = (0.80/12) - (0.3/12),
+                   hivScenario = "noint"
+  ),
+  "Scen.2b" = list(id = 6, # SEARCH telehealth (community) + HIV screening
+                   location = "community",
+                   alias = "comm.telehealth.hiv.screening",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75,
+                   pNcdTrtAdherence = BASELINE.VALUES$adherence + 0.40,
+                   pDropOut = (0.80/12) - (0.3/12),
+                   hivScenario = "tsteng" # this should be screening & linkage - check HIV model scenarios ("tsteng" = testing and engagement)
+  ),
+  "Scen.3a" = list(id = 7, # SEARCH telehealth (clinic + community) + HIV screening
+                   location = c("clinic","community"),
+                   alias = "comm.clinic.telehealth.hiv.screening",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75,
+                   pNcdTrtAdherence = BASELINE.VALUES$adherence + 0.40,
+                   pDropOut = (0.80/12) - (0.3/12),
+                   hivScenario = "tsteng"
+  ),
+  "Scen.3b" = list(id = 8, # SEARCH telehealth (clinic + community) + HIV 90/90/90
+                   location = c("clinic","community"),
+                   alias = "comm.clinic.max",
+                   pCoverage = pMonthlyCoverage, 
+                   pNcdTrtInitiation = 0.75,
+                   pNcdTrtAdherence = BASELINE.VALUES$adherence + 0.40,
+                   pDropOut = (0.80/12) - (0.3/12),
+                   hivScenario = "comp"
+  )
+)
+#cbind(sapply(ncdScenarios, function(x){x$pNcdTrtInitiation})) # example code 
 
 # global list that is used to generate pop$param
 # we have to define parameters used in sensitivity analysis outside of MP first, to change their value before MP is built
@@ -106,9 +195,11 @@ SA.PARAMS=list(
   red.cvd.death.diab.trt= (1-0.42)
 )
 
+
+
+
 ################################################################################################################
 # MODEL PARAMETERS (MP) HOUSES ALL PARAMETERS THAT MAY BE CHANGED IN SENSITIVITY ANALYSIS. THEY'RE CREATED ONCE FOR EACH POPULATION
-cat("loading function generate.new.modelParameter ... \n")
 generate.new.modelParameter<-function(rep=0,
                                       ncdScenario=0,
                                       saScenario=0){
@@ -272,7 +363,6 @@ generate.new.modelParameter<-function(rep=0,
 }
 
 ################################################################################################################
-cat("loading function generate.new.stat ... \n")
 generate.new.stat<-function(rep=0,
                             ncdScenario=0,
                             saScenario=0){
@@ -312,7 +402,7 @@ generate.new.stat<-function(rep=0,
     n.births=v1temp,
     n.births.non.hiv=v1temp,
     n.births.hiv=v1temp,
-    ncd.trt.coverage = v1temp,
+    annual.ncd.trt.coverage = v1temp,
     
     
     #5D arrays [age, sex, hiv, ncd, year]
