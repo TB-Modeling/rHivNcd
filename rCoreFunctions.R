@@ -30,7 +30,7 @@ calibrate.baseline <- function(n.reps){
     print(paste("replication ",rep," starting..."))
     
     # SAMPLE AND STORE INPUT VALUES 
-    p.monthly.baseline.enrollment = rlnorm(1, meanlog=log(0.008/12), sdlog=log(4)/2) 
+    p.monthly.baseline.enrollment = rlnorm(1, meanlog=log(0.008/12), sdlog=log(4)/2) # I think this needs to be logit normal 
     dropout.to.enrollment.ratio = rlnorm(1, meanlog=0, sdlog=log(4)/2) 
     p.monthly.baseline.dropout = p.monthly.baseline.enrollment * dropout.to.enrollment.ratio
     # p.monthly.baseline.dropout = rlnorm(1, meanlog=log(0.03/12), sdlog=log(4)/2)
