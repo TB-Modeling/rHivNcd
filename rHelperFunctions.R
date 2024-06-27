@@ -6,7 +6,6 @@
 print("Reading R Helper Functions... ")
 
 # Transform 1D data on HIV state sizes (hiv.pop) to proportion of people in different HIV states by age/sex
-print("loading function get.hiv.state.proportions")
 transform.hiv.data.1d.to.3d = function(hiv.pop){
   #transform 1D data to correct array dimensions
   ages = DIM.NAMES.AGE
@@ -33,7 +32,6 @@ transform.hiv.data.1d.to.3d = function(hiv.pop){
 
 
 #filters the state sizes to appropriate dimensions
-print("loading function filter.stateSizes.by.field")
 filter.5D.stats.by.field<- function(stateSizes, # a 5D array
                                     ages = DIM.NAMES.AGE, 
                                     sexes = DIM.NAMES.SEX,
@@ -76,7 +74,6 @@ filter.5D.stats.by.field<- function(stateSizes, # a 5D array
 }
 
 # transforms the frequencies into proportions 
-print("loading function return.prop.sex.age")
 return.prop.sex.age<-function(vFreq){
   vProp=vFreq
   if (length(dim(vFreq))==4){
@@ -104,7 +101,6 @@ return.prop.sex.age<-function(vFreq){
 #case 2-if the probability indicate the chance to the first event occurance: then it follows a geometric distribution where prob(x)=(1-p)^(x-1)*p
 # the cumulative prob for geom dist is 1-(1-p)^x
 # AP= 1-(1-MP)^12 >> MP= 1-(1-AP)^(1/12)
-print("loading function return.monthly.prob")
 return.monthly.prob<-function(annual.prob=1){
   return(1-(1-annual.prob)^(1/12))
 }
