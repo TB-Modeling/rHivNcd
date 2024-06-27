@@ -13,101 +13,6 @@ library(data.table)
 # library(data.table)
 
 #######################################################
-# LIST OF NCD SCENARIOS
-#coverage and dropouts should be specified as monthly values - but treatment initiation and adherence don't have to be? 
-pMonthlyCoverage=0.1/12#assuming 10% annual coverage 
-STABLE.NCD.COVERAGE = 0.07
-
-# NEW NCD SCENARIOS
-baselineValues = list(
-  coverage = .07, # Hickey et al, 2021; Table 1: 7% self-reported baseline HTN treatment; this is post-dropout 
-  treatment = 1, 
-  adherence = 0.40, # Hickey et al, 2021: ~40% of non-intervention group had controlled hypertension ("Among those engaged in care, 56% of intervention group participants and 43% of control group participants had controlled hypertension at year 3")
-  dropout = NULL
-    # 0.80/12 # Hickey et al, 2021: ~20% of control group who linked to care attended 1 visit per year for each of 3 years of follow up
-                    # Or do we just model drop-outs to maintain 7% on treatment? --> INCREASE UPTAKE TO MAKE SURE TREATMENT COVERAGE = 7%
-                    # I.e., there are new diagnoses each year, some start on treatment, model the equivalent # dropping out 
-)
-
-#cbind(sapply(ncdScenarios, function(x){x$pNcdTrtInitiation})) # example code 
-ncdScenarios = list(
-  "baseline" = list(id = 1, # baseline 
-                    location = "community", # this is new
-                    alias = "baseline", # this is new
-                    pCoverage = baselineValues$coverage, 
-                    pNcdTrtInitiation = baselineValues$treatment, 
-                        # previously: "combination of uptake and adherence", NOW: just uptake (model adherence separately)
-                        # but for baseline, this is set to 1 because we are combining coverage and treatment (7%)
-                    pNcdTrtAdherence = baselineValues$adherence, # this is new
-                    pDropOut = baselineValues$dropout,
-                    hivScenario = "noint" # this is new
-  ),
-  "Scen.1a" = list(id = 2, # AMPATH
-                   location = "clinic",
-                   alias = "clinic.AMPATH",
-                   pCoverage = pMonthlyCoverage, # need to decide on this 
-                   pNcdTrtInitiation = 0.35, # Hickey et al, 2021: 35% of control group linked to care
-                   pNcdTrtAdherence = baselineValues$adherence + 0.10, # 10% increase in adherence (--> 50%)
-                   pDropOut = (0.80/12) - (0.1/12), # 10% increase in retention (--> 70% dropout)
-                   hivScenario = "noint"
-  ),
-  "Scen.1b" = list(id = 3, # SEARCH telehealth (clinic)
-                   location = "clinic",
-                   alias = "clinic.telehealth",
-                   pCoverage = pMonthlyCoverage, 
-                   pNcdTrtInitiation = 0.75, # SEARCH telehealth: among those eligible, % linked and randomized 
-                   pNcdTrtAdherence = baselineValues$adherence + 0.40, # 40% increase in adherence (--> 80%) 
-                   pDropOut = (0.80/12) - (0.3/12), # 30% increase in retention (--> 50% dropout)
-                   hivScenario = "noint"
-  ),
-  "Scen.1c" = list(id = 4, # hypothetical, max NCD and HIV
-                   location = "clinic",
-                   alias = "clinic.max",
-                   pCoverage = pMonthlyCoverage, 
-                   pNcdTrtInitiation = 0.75,
-                   pNcdTrtAdherence = 1, # baselineValues$adherence + 0.75, # this is >100%
-                   pDropOut = (0.80/12) - (0.75/12), # 75% increase in retention (--> 5% dropout)
-                   hivScenario = "comp" # this should be 90/90/90 targets - check HIV model scenarios ("comp" = comprehensive)
-  ),
-  "Scen.2a" = list(id = 5, # SEARCH telehealth (community)
-                   location = "community",
-                   alias = "comm.telehealth",
-                   pCoverage = pMonthlyCoverage, 
-                   pNcdTrtInitiation = 0.75,
-                   pNcdTrtAdherence = baselineValues$adherence + 0.40,
-                   pDropOut = (0.80/12) - (0.3/12),
-                   hivScenario = "noint"
-  ),
-  "Scen.2b" = list(id = 6, # SEARCH telehealth (community) + HIV screening
-                   location = "community",
-                   alias = "comm.telehealth.hiv.screening",
-                   pCoverage = pMonthlyCoverage, 
-                   pNcdTrtInitiation = 0.75,
-                   pNcdTrtAdherence = baselineValues$adherence + 0.40,
-                   pDropOut = (0.80/12) - (0.3/12),
-                   hivScenario = "tsteng" # this should be screening & linkage - check HIV model scenarios ("tsteng" = testing and engagement)
-  ),
-  "Scen.3a" = list(id = 7, # SEARCH telehealth (clinic + community) + HIV screening
-                   location = c("clinic","community"),
-                   alias = "comm.clinic.telehealth.hiv.screening",
-                   pCoverage = pMonthlyCoverage, 
-                   pNcdTrtInitiation = 0.75,
-                   pNcdTrtAdherence = baselineValues$adherence + 0.40,
-                   pDropOut = (0.80/12) - (0.3/12),
-                   hivScenario = "tsteng"
-  ),
-  "Scen.3b" = list(id = 8, # SEARCH telehealth (clinic + community) + HIV 90/90/90
-                   location = c("clinic","community"),
-                   alias = "comm.clinic.max",
-                   pCoverage = pMonthlyCoverage, 
-                   pNcdTrtInitiation = 0.75,
-                   pNcdTrtAdherence = baselineValues$adherence + 0.40,
-                   pDropOut = (0.80/12) - (0.3/12),
-                   hivScenario = "comp"
-  )
-)
-
-#######################################################
 print("Sourcing dependencies")
 {
   source("globalEnvironment.R")
@@ -117,6 +22,26 @@ print("Sourcing dependencies")
   source("rCoreFunctions.R")
   # source("plots.R")
 }
+
+if(1==1){
+  test.calibration = calibrate.baseline(n.reps = 50)
+}
+
+# reps where the mean coverage = 3.5-14% (7/2 - 7*2)
+reps.to.include = dimnames(
+  test.calibration$coverage[(apply(test.calibration$coverage,"rep",mean)>.035) & 
+                              (apply(test.calibration$coverage,"rep",mean)<.14),])$rep
+
+apply(test.calibration$coverage,"rep",mean)
+mean(test.calibration$coverage)
+mean(test.calibration$inputs[reps.to.include,"enrollment"])
+mean(test.calibration$inputs[reps.to.include,"dropout"])
+
+ggplot() + 
+  geom_line(data = reshape2::melt(test.calibration$coverage[reps.to.include,]), 
+            aes(x=year,y=value,color=as.character(rep))) 
+
+
 
 # # #######################################################
 # # # SINGLE RUN ON ROCKFISH
@@ -179,13 +104,12 @@ if (1==2) {
 
 # #######################################################
 # MULTI REPS
-if (1==1){
+if (1==2){
   vReps=1:1 #reps
   vNcdScenarios=1#:8 #scenarios
   print("running models sequentially ....")
   nReps=length(vReps)
-  nNcdScenarios=length(vNcdScenarios)
-
+  
   lapply(vReps,function(rep){
     lapply(vNcdScenarios,function(ncdId){
       set.seed(rep)
@@ -196,14 +120,16 @@ if (1==1){
                                  n = POP.SIZE,
                                  rep=rep,
                                  ncdScenario = ncdScenarios[[ncdId]]$id,
-                                 saScenario = 0,
-                                 stable.ncd.coverage = STABLE.NCD.COVERAGE) # this function now also initializes NCD treatment 
+                                 saScenario = 0) 
       
-      while(pop$params$CYNOW<= END.YEAR)
+      while(pop$params$CYNOW<= END.YEAR){
         run.one.year.baseline(pop,
                               p.monthly.baseline.enrollment=(.1/12), # sample this during calibration 
-                              p.monthly.baseline.dropout=(.1/12), # sample this during calibration 
-                              p.baseline.adherence=baselineValues$adherence) 
+                              p.monthly.baseline.dropout=(.1/12) # sample this during calibration
+                              ) 
+
+      }
+      
         # run.one.year.int(pop,
         #                  ncdScenario =ncdScenarios[[ncdId]]$id,
         #                  int.start.year = 2023,

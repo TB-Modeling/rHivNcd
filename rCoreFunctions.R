@@ -5,6 +5,82 @@
 #####################################
 print("Sourcing rCoreFunctions.R ... ")
 
+##-----------------------------##
+##-- MAIN CALIBRATE FUNCTION --##
+##-----------------------------##
+calibrate.baseline <- function(n.reps){
+  
+  # Set up arrays for storing things
+  dim.names.inputs = list(rep = c(1:n.reps),
+                          inputs = c("enrollment","dropout","ratio"))
+  inputs = array(NA,
+                 dim = sapply(dim.names.inputs,length),
+                 dimnames = dim.names.inputs)
+  
+  dim.names.coverage = list(rep = c(1:n.reps),
+                            year = (c(INITIAL.YEAR:END.YEAR)))
+  coverage = array(NA,
+                   dim = sapply(dim.names.coverage,length),
+                   dimnames = dim.names.coverage)
+  
+  khm.ids = c()
+  seeds = c()
+  
+  for(rep in (1:n.reps)){
+    print(paste("replication ",rep," starting..."))
+    
+    # SAMPLE AND STORE INPUT VALUES 
+    p.monthly.baseline.enrollment = rlnorm(1, meanlog=log(0.008/12), sdlog=log(4)/2) 
+    dropout.to.enrollment.ratio = rlnorm(1, meanlog=0, sdlog=log(4)/2) 
+    p.monthly.baseline.dropout = p.monthly.baseline.enrollment * dropout.to.enrollment.ratio
+    # p.monthly.baseline.dropout = rlnorm(1, meanlog=log(0.03/12), sdlog=log(4)/2)
+    # log(x)/2 --> can be off by a factor of x (i.e., CI on log scale goes from (1/x)*mean to x*mean)
+    
+    inputs[rep,"enrollment"] = p.monthly.baseline.enrollment
+    inputs[rep,"dropout"] = p.monthly.baseline.dropout
+    inputs[rep,"ratio"] = dropout.to.enrollment.ratio
+    
+    
+    # INITIALIZE AND RUN SIM 
+    set.seed(rep)
+    seeds[rep] = rep
+    pop<-initialize.simulation(id = rep,
+                               n = POP.SIZE,
+                               rep=rep,
+                               ncdScenario = 1, # hard-coding for baseline 
+                               saScenario = 0) 
+    
+    khm.ids[rep] = pop$params$khm.id
+    
+    while(pop$params$CYNOW<= END.YEAR){
+      run.one.year.baseline(pop,
+                            p.monthly.baseline.enrollment=p.monthly.baseline.enrollment, # sampled above
+                            p.monthly.baseline.dropout=p.monthly.baseline.dropout # sampled above
+      ) 
+      
+    }
+    
+    # STORE COVERAGE 
+    coverage[rep,] = pop$stats$annual.ncd.trt.coverage
+    
+    
+    #saving population stat and param files separately
+    # x=0
+    # saveRDS(pop$stats,file = paste0("outputs/popStats-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+    # saveRDS(pop$params,file = paste0("outputs/popParams-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
+    
+  }
+  
+  rv = list()
+  rv$coverage = coverage[,-1]
+  rv$inputs = inputs
+  rv$khm.ids = khm.ids
+  rv$seeds = seeds
+  
+  rv
+  
+}
+
 ##------------------------------##
 ##-- MAIN INITIALIZE FUNCTION --##
 ##------------------------------##
@@ -12,9 +88,7 @@ initialize.simulation <- function( id=0,
                                    n=0 ,
                                    rep=0, #replication id
                                    ncdScenario=0, #ncd scenario
-                                   saScenario=0, #sa scenario
-                                   stable.ncd.coverage=0, # stable ncd treatment coverage
-                                   p.baseline.adherence=0
+                                   saScenario=0 #sa scenario
 ){
   # 1- create an empty population
   pop<-POPULATION$new(id = id,
@@ -67,7 +141,8 @@ initialize.simulation <- function( id=0,
   #
   pop<-invisible(set.initial.hiv.status(pop ))
   pop<-invisible(set.cvd.risk(pop))
-  pop<-invisible(initialize.ncd.treatment(pop,stable.ncd.coverage,p.baseline.adherence))
+  pop<-invisible(initialize.ncd.treatment(pop)) # make sure this doesn't need to be before cvd risk
+  ## MS ^ rename these arguments to be similar
   pop$record.annual.stats()
   pop$increaseYear() 
   #
@@ -80,8 +155,7 @@ initialize.simulation <- function( id=0,
 # model one simulated year under baseline treatment (from Jan 1st to Dec 31st)
 run.one.year.baseline <-function(pop,
                                  p.monthly.baseline.enrollment, # sample this during calibration 
-                                 p.monthly.baseline.dropout, # sample this during calibration 
-                                 p.baseline.adherence # prop of ncd trt adhering to medication 
+                                 p.monthly.baseline.dropout # sample this during calibration  
 ){ 
   #### AT YEAR's BEGINNING: computing event probabilities from KHM
   khm<-compute.khm.probabilities(pop)
@@ -108,8 +182,7 @@ run.one.year.baseline <-function(pop,
     # MODEL BASELINE ------
     pop<-model.ncd.baseline(pop,
                             p.monthly.baseline.enrollment,
-                            p.monthly.baseline.dropout,
-                            p.baseline.adherence)
+                            p.monthly.baseline.dropout)
     
     
     #4- MODEL AGING --------
@@ -170,6 +243,7 @@ run.one.year.baseline <-function(pop,
   if (DEBUGMODE) cat("End of year: ",pop$params$CYNOW," --------------------------- \n")
   # Record annual statistics --------
   pop$record.annual.stats()
+  pop$record.annual.ncd.trt.coverage()
   #Increment the clock
   pop$increaseYear()
   pop
@@ -281,6 +355,7 @@ run.one.year.int<-function(pop,
   if (DEBUGMODE) cat("End of year: ",pop$params$CYNOW," --------------------------- \n")
   # Record annual statistics --------
   pop$record.annual.stats()
+  pop$record.annual.ncd.trt.coverage()
   #Increment the clock
   pop$increaseYear()
   pop
@@ -325,9 +400,7 @@ set.cvd.risk = function(pop){
 }
 
 # sets initial ncd treatment coverage (7%)
-initialize.ncd.treatment = function(pop,
-                                    stable.ncd.coverage,
-                                    p.baseline.adherence){
+initialize.ncd.treatment = function(pop){
   baselineNcdIds=c() # vector of Ids for those eligible for baseline treatment
   invisible(lapply(c(1:length(pop$members)),function(x){
     p=pop$members[[x]]
@@ -335,7 +408,7 @@ initialize.ncd.treatment = function(pop,
       baselineNcdIds<<-cbind(baselineNcdIds,x)
     }}))
   
-  nToScreen.baseline = round((stable.ncd.coverage * length(baselineNcdIds))) # stable.ncd.coverage is 7%; so 7% of people with NCDs are treated
+  nToScreen.baseline = round((BASELINE.VALUES$coverage * length(baselineNcdIds))) # BASELINE.VALUES$coverage is 7%; so 7% of people with NCDs are treated
   selectedIds.baseline=sample(size = nToScreen.baseline,x = baselineNcdIds,replace = F ) #choose a random set from baseline with NCDs 
   
   invisible(lapply(selectedIds.baseline,function(x){
@@ -347,7 +420,7 @@ initialize.ncd.treatment = function(pop,
       pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
       p$model.diab.diag(tnow)
       
-      if(runif(1) < p.baseline.adherence){
+      if(runif(1) < BASELINE.VALUES$adherence){
         pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$start.diab.trt.adherence(tnow)
       } else {
@@ -360,7 +433,7 @@ initialize.ncd.treatment = function(pop,
       pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
       p$model.hyp.diag(tnow)
       
-      if(runif(1) < p.baseline.adherence){
+      if(runif(1) < BASELINE.VALUES$adherence){
         pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$start.hyp.trt.adherence(tnow)
       } else {
@@ -373,7 +446,7 @@ initialize.ncd.treatment = function(pop,
       pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
       p$model.diab.hyp.diag(tnow)
       
-      if(runif(1) < p.baseline.adherence){
+      if(runif(1) < BASELINE.VALUES$adherence){
         pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$start.diab.hyp.trt.adherence(tnow)
       } else {
@@ -393,8 +466,7 @@ initialize.ncd.treatment = function(pop,
 # baseline scenario function
 model.ncd.baseline = function(pop,
                               p.monthly.baseline.enrollment,
-                              p.monthly.baseline.dropout,
-                              p.baseline.adherence){
+                              p.monthly.baseline.dropout){
   
   # model drop outs
   invisible(lapply(pop$members,function(p){
@@ -415,10 +487,10 @@ model.ncd.baseline = function(pop,
     tnow=pop$params$TNOW
     if(runif(1) < p.monthly.baseline.enrollment){ 
       if(p$ncdState==NCD.DIAB){
-        pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+        #pop$record.diab.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$model.diab.diag(tnow)
         
-        if(runif(1) < p.baseline.adherence){
+        if(runif(1) < BASELINE.VALUES$adherence){
           pop$record.diab.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
           p$start.diab.trt.adherence(tnow)
         } else {
@@ -428,10 +500,10 @@ model.ncd.baseline = function(pop,
       }
       
       if(p$ncdState==NCD.HYP){
-        pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+        #pop$record.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$model.hyp.diag(tnow)
         
-        if(runif(1) < p.baseline.adherence){
+        if(runif(1) < BASELINE.VALUES$adherence){
           pop$record.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
           p$start.hyp.trt.adherence(tnow)
         } else {
@@ -441,10 +513,10 @@ model.ncd.baseline = function(pop,
       }
       
       if(p$ncdState==NCD.DIAB_HYP){
-        pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
+        #pop$record.diab.hyp.diag(p$agegroup,p$sex,p$hivState,p$ncdState)
         p$model.diab.hyp.diag(tnow)
         
-        if(runif(1) < p.baseline.adherence){
+        if(runif(1) < BASELINE.VALUES$adherence){
           pop$record.diab.hyp.trt.adherence(p$agegroup,p$sex,p$hivState,p$ncdState)
           p$start.diab.hyp.trt.adherence(tnow)
         } else {
@@ -454,9 +526,7 @@ model.ncd.baseline = function(pop,
       }
     }
   })) 
-  
-  pop$return.ncd.trt.coverage()
-   
+ 
   pop
 }
 
