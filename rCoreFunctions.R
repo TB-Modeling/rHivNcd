@@ -25,12 +25,13 @@ calibrate.baseline <- function(n.reps){
   
   khm.ids = c()
   seeds = c()
+  log.lik = c()
   
   for(rep in (1:n.reps)){
     print(paste("replication ",rep," starting..."))
     
     # SAMPLE AND STORE INPUT VALUES 
-    p.monthly.baseline.enrollment = rlnorm(1, meanlog=log(0.008/12), sdlog=log(4)/2) # I think this needs to be logit normal 
+    p.monthly.baseline.enrollment = rlnorm(1, meanlog=log(0.08/12), sdlog=log(4)/2) # I think this needs to be logit normal 
     dropout.to.enrollment.ratio = rlnorm(1, meanlog=0, sdlog=log(4)/2) 
     p.monthly.baseline.dropout = p.monthly.baseline.enrollment * dropout.to.enrollment.ratio
     # p.monthly.baseline.dropout = rlnorm(1, meanlog=log(0.03/12), sdlog=log(4)/2)
@@ -62,6 +63,7 @@ calibrate.baseline <- function(n.reps){
     
     # STORE COVERAGE 
     coverage[rep,] = pop$stats$annual.ncd.trt.coverage
+    log.lik[rep] = compute.baseline.testing.likelihood(mean = coverage[rep,"2015"])
     
     
     #saving population stat and param files separately
@@ -71,11 +73,30 @@ calibrate.baseline <- function(n.reps){
     
   }
   
+  dim.names.full = list(rep = c(1:n.reps),
+                        value = c("enrollment","dropout","ratio",
+                                  "coverage.2015","exp(log.lik)",
+                                  "khm.id","seed"))
+  
+  rv.array = array(NA,
+                   dim = sapply(dim.names.full,length),
+                   dimnames = dim.names.full)
+  
+  rv.array[,"enrollment"] = inputs[,"enrollment"]
+  rv.array[,"dropout"] = inputs[,"dropout"]
+  rv.array[,"ratio"] = inputs[,"ratio"]
+  rv.array[,"coverage.2015"] = coverage[,"2015"]
+  rv.array[,"exp(log.lik)"] = exp(log.lik)
+  rv.array[,"khm.id"] = khm.ids
+  rv.array[,"seed"] = seeds
+  
   rv = list()
   rv$coverage = coverage[,-1]
-  rv$inputs = inputs
-  rv$khm.ids = khm.ids
-  rv$seeds = seeds
+  rv$summary = rv.array
+  # rv$inputs = inputs
+  # rv$khm.ids = khm.ids
+  # rv$seeds = seeds
+  # rv$log.lik = log.lik
   
   rv
   
@@ -1023,7 +1044,18 @@ update.ncd.states<-function(pop){
   pop
 }
 
-
+# compute log likelihood of baseline testing 
+compute.baseline.testing.likelihood = function(mean){
+  
+  # Hickey et al, 2021
+  trt = 777
+  tot = 10928
+  prop = trt/tot
+  sd = sqrt((prop*(1-prop))/tot)
+  
+  rv = dnorm(x = prop, mean = mean, sd = sd, log= T)
+  rv
+}
 
 
 ## Old tuning code

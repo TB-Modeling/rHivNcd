@@ -8,8 +8,8 @@
 
 library(R6)
 library(data.table)
+library(ggplot2)
 # library(Rcpp)
-# library(ggplot2)
 # library(data.table)
 
 #######################################################
@@ -24,22 +24,32 @@ print("Sourcing dependencies")
 }
 
 if(1==1){
-  test.calibration = calibrate.baseline(n.reps = 50)
+  test.calibration = calibrate.baseline(n.reps = 100)
+  #save(test.calibration, file = paste0("outputs/test.calibration_",Sys.Date(),".RData"))
 }
 
-# reps where the mean coverage = 3.5-14% (7/2 - 7*2)
-reps.to.include = dimnames(
-  test.calibration$coverage[(apply(test.calibration$coverage,"rep",mean)>.035) & 
-                              (apply(test.calibration$coverage,"rep",mean)<.14),])$rep
+if(1==2){
+  # reps where the mean coverage = 3.5-14% (7/2 - 7*2)
+  # reps.to.include = dimnames(
+  #   test.calibration$coverage[(apply(test.calibration$coverage,"rep",mean)>.035) & 
+  #                               (apply(test.calibration$coverage,"rep",mean)<.14),])$rep
+  
+  # in 2015 specifically 
+  reps.to.include = dimnames(
+    test.calibration$coverage[(test.calibration$coverage[,"2015"]>.035) & 
+                                (test.calibration$coverage[,"2015"]<.14),])$rep
+  
+  #x = cbind(test.calibration$coverage[,"2015"],exp(test.calibration$log.lik))
+  # apply(test.calibration$coverage,"rep",mean)
+  # mean(test.calibration$coverage)
+  # mean(test.calibration$inputs[reps.to.include,"enrollment"])
+  # mean(test.calibration$inputs[reps.to.include,"dropout"])
+  
+  ggplot() +
+    geom_line(data = reshape2::melt(test.calibration$coverage[reps.to.include,]),
+              aes(x=year,y=value,color=as.character(rep)))
+}
 
-apply(test.calibration$coverage,"rep",mean)
-mean(test.calibration$coverage)
-mean(test.calibration$inputs[reps.to.include,"enrollment"])
-mean(test.calibration$inputs[reps.to.include,"dropout"])
-
-ggplot() + 
-  geom_line(data = reshape2::melt(test.calibration$coverage[reps.to.include,]), 
-            aes(x=year,y=value,color=as.character(rep))) 
 
 
 
