@@ -6,21 +6,21 @@
 #billed as if we used the entire amount.  2 hours and 30 minutes to be on the safe side.
 # pop=100k >>> 2 CPUs; 5 hours
 # pop=500k >>> 4 CPUs; 8 hours
-# pop=1m >>> 5 CPUs; 10 hours
+# pop=1m >>> 5 CPUs; 15 hours
 
-
-#SBATCH --partition=defq
-#SBATCH --job-name=hivncd-slurm
-#SBATCH --time=10:00:0
-#SBATCH --cpus-per-task=5
+#SBATCH --partition=parallel
+#SBATCH --job-name=hivncd
+#SBATCH --time= 05:00:00
 #SBATCH --nodes=1
-#SBATCH --mem-per-cpu=4GB
-#SBATCH --array=1-1700
+#SBATCH --cpus-per-task= 1
+#SBATCH --ntasks-per-node= 48
 #SBATCH --output=outputs/outSlurm_%a.out
 #SBATCH --error=outputs/outSlurm_%a.err
 #SBATCH --mail-type=end
-#SBATCH --mail-user=pkasaie@jhu.edu
-
+#SBATCH --array=1-1
 
 module load r
 Rscript driver.R $SLURM_ARRAY_TASK_ID
+
+
+
