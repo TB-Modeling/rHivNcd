@@ -23,7 +23,24 @@ print("Sourcing dependencies")
   # source("plots.R")
 }
 
+#receiving the input from command line and printing it
 if(1==1){
+  args <- commandArgs(trailingOnly = TRUE)
+  # Check if the correct number of arguments is provided
+  if (length(args) != 1) {
+    stop("Please provide exactly one argument")
+  }
+  # Convert the argument to a numeric value
+  input_value <- as.numeric(args[1])
+  # Ensure the argument is a valid number
+  if (is.na(input_value)) {
+    stop("The provided argument is not a valid number")
+  }
+  # Print the input value to verify
+  print(paste("Input value is:", input_value))
+}
+
+if(1==2){
   test.calibration = calibrate.baseline(n.reps = 1)
   #save(test.calibration, file = paste0("outputs/test.calibration_",Sys.Date(),".RData"))
 }
@@ -62,25 +79,25 @@ if (1==2) {
   print("running models sequentially ....")
   nReps=length(vReps)
   nNcdScenarios=length(vNcdScenarios)
-
+  
   print(paste("running models parallel with ",nReps,"reps and",nNcdScenarios,"ncdScenarios"))
-
+  
   args = commandArgs(trailingOnly=TRUE)
   x=as.numeric(args[1])
   rep=floor((x-1)/(nNcdScenarios))+1
   ncdId= (x-1)%%nNcdScenarios+1
-
+  
   # for (x in c(1:150)){
   #   rep=floor((x-1)/(nNcdScenarios))+1
   #   scenarioId= (x-1)%%nNcdScenarios+1
   #   print(paste("x=",x,"rep=",rep,"scenario=",scenarioId))
   # }
-
+  
   # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
   set.seed(rep)
   start_time <- Sys.time()
   print(paste("replication ",rep," scenario", ncdScenarios[[ncdId]]$id, "starting..."))
-
+  
   # create pop at the end of 2014; set up hiv/ncd states; records stats and increament the year to 2015
   pop<-initialize.simulation(id = rep,
                              n = POP.SIZE,
@@ -98,11 +115,11 @@ if (1==2) {
                      pNcdTrtAdherence = ncdScenarios[[ncdId]]$pNcdTrtAdherence,
                      pDropOut=ncdScenarios[[ncdId]]$pDropOut
     )
-
+  
   #saving population stat and param files separately
   saveRDS(pop$stats,file = paste0("outputs/popStats-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
   saveRDS(pop$params,file = paste0("outputs/popParams-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
-
+  
   # saving time
   end_time <- Sys.time()
   session_time=hms_span(start_time,end_time)
@@ -124,7 +141,7 @@ if (1==2){
     lapply(vNcdScenarios,function(ncdId){
       set.seed(rep)
       print(paste("replication ",rep," scenario", ncdScenarios[[ncdId]]$id, "starting..."))
-
+      
       # create pop at the end of 2014; set up hiv/ncd states; set up ncd treatment; records stats and increment the year to 2015
       pop<-initialize.simulation(id = rep,
                                  n = POP.SIZE,
@@ -136,25 +153,25 @@ if (1==2){
         run.one.year.baseline(pop,
                               p.monthly.baseline.enrollment=(.1/12), # sample this during calibration 
                               p.monthly.baseline.dropout=(.1/12) # sample this during calibration
-                              ) 
-
+        ) 
+        
       }
       
-        # run.one.year.int(pop,
-        #                  ncdScenario =ncdScenarios[[ncdId]]$id,
-        #                  int.start.year = 2023,
-        #                  int.end.year = 2030,
-        #                  pCoverage = ncdScenarios[[ncdId]]$pCoverage,
-        #                  pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
-        #                  pNcdTrtAdherence = ncdScenarios[[ncdId]]$pNcdTrtAdherence,
-        #                  pDropOut=ncdScenarios[[ncdId]]$pDropOut
-        # )
-
+      # run.one.year.int(pop,
+      #                  ncdScenario =ncdScenarios[[ncdId]]$id,
+      #                  int.start.year = 2023,
+      #                  int.end.year = 2030,
+      #                  pCoverage = ncdScenarios[[ncdId]]$pCoverage,
+      #                  pNcdTrtInitiation = ncdScenarios[[ncdId]]$pNcdTrtInitiation,
+      #                  pNcdTrtAdherence = ncdScenarios[[ncdId]]$pNcdTrtAdherence,
+      #                  pDropOut=ncdScenarios[[ncdId]]$pDropOut
+      # )
+      
       #saving population stat and param files separately
       x=0
       saveRDS(pop$stats,file = paste0("outputs/popStats-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
       saveRDS(pop$params,file = paste0("outputs/popParams-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
-
+      
     })
   })
 }
