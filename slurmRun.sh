@@ -9,11 +9,11 @@
 # pop=500k >>> 4 CPUs; 8 hours
 # pop=1m >>> 5 CPUs; 15 hours
 
-add working directory
+
 
 #SBATCH --partition=parallel
 #SBATCH --job-name=hivncd
-#SBATCH --time=05:00:00
+#SBATCH --time=01:00:00
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks-per-node=48
@@ -25,14 +25,14 @@ add working directory
 cd "/home/pkasaie/scratch4-ddowdy1/melissa/rHivNcd"
 
 # Calculate the start and end indices for the current array job
-first_id=$(( ($SLURM_ARRAY_TASK_ID) * 48 +1 ))
-last_id=$(( ($first_id) + 48 - 1 ))
+first_id=$(( SLURM_ARRAY_TASK_ID * 48 + 1 ))
+last_id=$(( first_id + 48 - 1 ))
 
 
 module load r
 
 # Running jobs in a sequence
-seq $first_id $last_id | parallel -j 48 --joblog node-${{SLURM_ARRAY_TASK_ID}}.log --wd . Rscript driver.R {}
+seq $first_id $last_id | parallel -j 48 --joblog node-${SLURM_ARRAY_TASK_ID}.log --wd . Rscript driver.R {}
 
 # seq $first_id $last_id: This generates a sequence of numbers from first_id to last_id.
 
