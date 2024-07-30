@@ -8,6 +8,90 @@ print("Sourcing rCoreFunctions.R ... ")
 ##-----------------------------##
 ##-- MAIN CALIBRATE FUNCTION --##
 ##-----------------------------##
+calibrate.baseline.single.rep <- function(replication.id){
+  
+  # Set up arrays for storing things
+  dim.names.inputs = list(replication.id = c(replication.id),
+                          inputs = c("enrollment","dropout","ratio"))
+  inputs = array(NA,
+                 dim = sapply(dim.names.inputs,length),
+                 dimnames = dim.names.inputs)
+  
+  dim.names.coverage = list(replication.id = c(replication.id),
+                            year = (c(INITIAL.YEAR:END.YEAR)))
+  coverage = array(NA,
+                   dim = sapply(dim.names.coverage,length),
+                   dimnames = dim.names.coverage)
+  
+  khm.ids = c()
+  seeds = c()
+  log.lik = c()
+
+  # SAMPLE AND STORE INPUT VALUES 
+  p.monthly.baseline.enrollment = rlnorm(1, meanlog=log(0.08/12), sdlog=log(4)/2) # I think this needs to be logit normal 
+  dropout.to.enrollment.ratio = rlnorm(1, meanlog=0, sdlog=log(4)/2) 
+  p.monthly.baseline.dropout = p.monthly.baseline.enrollment * dropout.to.enrollment.ratio
+  # p.monthly.baseline.dropout = rlnorm(1, meanlog=log(0.03/12), sdlog=log(4)/2)
+  # log(x)/2 --> can be off by a factor of x (i.e., CI on log scale goes from (1/x)*mean to x*mean)
+  
+  inputs[replication.id,"enrollment"] = p.monthly.baseline.enrollment
+  inputs[replication.id,"dropout"] = p.monthly.baseline.dropout
+  inputs[replication.id,"ratio"] = dropout.to.enrollment.ratio
+  
+  cat("Using", ram_usage(), "currently\n")
+  
+  # INITIALIZE AND RUN SIM 
+  set.seed(replication.id)
+  seeds[replication.id] = replication.id
+  pop<-initialize.simulation(id = replication.id,
+                             n = POP.SIZE,
+                             rep=replication.id,
+                             ncdScenario = 1, # hard-coding for baseline 
+                             saScenario = 0) 
+  
+  khm.ids[replication.id] = pop$params$khm.id
+  
+  while(pop$params$CYNOW<= END.YEAR){
+    run.one.year.baseline(pop,
+                          p.monthly.baseline.enrollment=p.monthly.baseline.enrollment, # sampled above
+                          p.monthly.baseline.dropout=p.monthly.baseline.dropout # sampled above
+    ) 
+    cat("Using", ram_usage(), "currently\n")
+  }
+  
+    # STORE COVERAGE 
+    coverage[replication.id,] = pop$stats$annual.ncd.trt.coverage
+    log.lik[replication.id] = compute.baseline.testing.likelihood(mean = coverage[replication.id,"2015"])
+    
+  
+  dim.names.full = list(replication.id = c(replication.id),
+                        value = c("enrollment","dropout","ratio",
+                                  "coverage.2015","exp(log.lik)",
+                                  "khm.id","seed"))
+  
+  rv.array = array(NA,
+                   dim = sapply(dim.names.full,length),
+                   dimnames = dim.names.full)
+  
+  rv.array[,"enrollment"] = inputs[,"enrollment"]
+  rv.array[,"dropout"] = inputs[,"dropout"]
+  rv.array[,"ratio"] = inputs[,"ratio"]
+  rv.array[,"coverage.2015"] = coverage[,"2015"]
+  rv.array[,"exp(log.lik)"] = exp(log.lik)
+  rv.array[,"khm.id"] = khm.ids
+  rv.array[,"seed"] = seeds
+  
+  rv = list()
+  rv$coverage = coverage[,-1]
+  rv$summary = rv.array
+  
+  cat("Using", ram_usage(), "currently\n")
+  
+  rv
+  
+}
+
+
 calibrate.baseline <- function(n.reps){
   
   # Set up arrays for storing things
