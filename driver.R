@@ -40,9 +40,10 @@ if(1==1){
   print(paste("Input value is:", input_value))
 }
 
-if(1==2){
-  test.calibration = calibrate.baseline(n.reps = 1)
+if(1==1){
+  test.calibration = calibrate.baseline.single.rep(replication.id = as.numeric(args[1]))
   #save(test.calibration, file = paste0("outputs/test.calibration_",Sys.Date(),".RData"))
+  save(test.calibration,file = paste0("outputs/test.calibration_",as.numeric(args[1]),".RData")) # to save on Rockfish? 
 }
 
 if(1==2){
