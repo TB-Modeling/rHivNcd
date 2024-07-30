@@ -5,6 +5,22 @@
 #####################################
 print("Reading R Helper Functions... ")
 
+library(pryr)
+
+# Jeff's function for gauging RAM usage 
+ram_usage <- function() {
+  bytes = pryr::mem_used()
+  units <- c("B", "KB", "MB", "GB", "TB")
+  thresholds <- 1024^(0:(length(units) - 1))
+  
+  idx <- max(which(bytes >= thresholds))
+  
+  converted_value <- bytes / thresholds[idx]
+  paste(round(converted_value, 2), units[idx])
+}
+
+
+
 # Transform 1D data on HIV state sizes (hiv.pop) to proportion of people in different HIV states by age/sex
 transform.hiv.data.1d.to.3d = function(hiv.pop){
   #transform 1D data to correct array dimensions
