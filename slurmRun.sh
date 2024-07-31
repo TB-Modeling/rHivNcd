@@ -12,14 +12,14 @@
 
 #SBATCH --partition=parallel
 #SBATCH --job-name=hivncd
-#SBATCH --time=00:01:00 
-#SBATCH --nodes=1
+#SBATCH --time=00:06:00 
+#SBATCH --nodes=2
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks-per-node=48
 #SBATCH --output=outputs/outSlurm_%a.out
 #SBATCH --error=outputs/outSlurm_%a.err
 #SBATCH --mail-type=end
-#SBATCH --array=0-100%75
+#SBATCH --array=0-2
 
 cd "/home/pkasaie/scratch4-ddowdy1/melissa/rHivNcd"
 
