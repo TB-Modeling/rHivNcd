@@ -38,7 +38,7 @@ calibrate.baseline.single.rep <- function(replication.id){
   inputs[replication.id,"dropout"] = p.monthly.baseline.dropout
   inputs[replication.id,"ratio"] = dropout.to.enrollment.ratio
   
-  cat("Using", ram_usage(), "currently\n")
+  #cat("Using", ram_usage(), "currently\n")
   
   # INITIALIZE AND RUN SIM 
   set.seed(replication.id)
@@ -56,7 +56,7 @@ calibrate.baseline.single.rep <- function(replication.id){
                           p.monthly.baseline.enrollment=p.monthly.baseline.enrollment, # sampled above
                           p.monthly.baseline.dropout=p.monthly.baseline.dropout # sampled above
     ) 
-    cat("Using", ram_usage(), "currently\n")
+    #cat("Using", ram_usage(), "currently\n")
   }
   
     # STORE COVERAGE 
@@ -85,7 +85,7 @@ calibrate.baseline.single.rep <- function(replication.id){
   rv$coverage = coverage[,-1]
   rv$summary = rv.array
   
-  cat("Using", ram_usage(), "currently\n")
+  #cat("Using", ram_usage(), "currently\n")
   
   rv
   

@@ -41,6 +41,7 @@ if(1==1){
 }
 
 if(1==1){
+  print(as.numeric(args[1]))
   test.calibration = calibrate.baseline.single.rep(replication.id = as.numeric(args[1]))
   #save(test.calibration, file = paste0("outputs/test.calibration_",Sys.Date(),".RData"))
   save(test.calibration,file = paste0("outputs/test.calibration_",as.numeric(args[1]),".RData")) # to save on Rockfish? 
