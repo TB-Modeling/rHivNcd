@@ -9,6 +9,7 @@ print("Sourcing rCoreFunctions.R ... ")
 ##-- MAIN CALIBRATE FUNCTION --##
 ##-----------------------------##
 calibrate.baseline.single.rep <- function(replication.id){
+  print(replication.id)
   
   # Set up arrays for storing things
   dim.names.inputs = list(replication.id = c(replication.id),
@@ -34,6 +35,7 @@ calibrate.baseline.single.rep <- function(replication.id){
   # p.monthly.baseline.dropout = rlnorm(1, meanlog=log(0.03/12), sdlog=log(4)/2)
   # log(x)/2 --> can be off by a factor of x (i.e., CI on log scale goes from (1/x)*mean to x*mean)
   
+  print(p.monthly.baseline.enrollment)
   inputs[replication.id,"enrollment"] = p.monthly.baseline.enrollment
   inputs[replication.id,"dropout"] = p.monthly.baseline.dropout
   inputs[replication.id,"ratio"] = dropout.to.enrollment.ratio
