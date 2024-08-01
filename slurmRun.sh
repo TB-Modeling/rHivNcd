@@ -13,13 +13,12 @@
 #SBATCH --partition=parallel
 #SBATCH --job-name=hivncd
 #SBATCH --time=06:00:00 
-#SBATCH --nodes=2
-#SBATCH --cpus-per-task=1
-#SBATCH --ntasks-per-node=24
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=2
 #SBATCH --output=outputs/outSlurm_%a.out
 #SBATCH --error=outputs/outSlurm_%a.err
 #SBATCH --mail-type=end
-#SBATCH --array=0-1
+#SBATCH --array=0-23
 
 cd "/home/mschnur3/scratch4/melissa/rHivNcd"
 
