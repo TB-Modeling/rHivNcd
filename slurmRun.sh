@@ -18,7 +18,7 @@
 #SBATCH --output=outputs/outSlurm_%a.out
 #SBATCH --error=outputs/outSlurm_%a.err
 #SBATCH --mail-type=end
-#SBATCH --array=0-23
+#SBATCH --array=0
 
 cd "/home/mschnur3/scratch4/melissa/rHivNcd"
 
