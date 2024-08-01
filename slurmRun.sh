@@ -21,7 +21,7 @@
 #SBATCH --mail-type=end
 #SBATCH --array=0-1
 
-cd "/home/pkasaie/scratch4-ddowdy1/melissa/rHivNcd"
+cd "/home/mschnur3/scratch4/melissa/rHivNcd"
 
 # Calculate the start and end indices for the current array job
 first_id=$(( SLURM_ARRAY_TASK_ID * 48 + 1 ))
