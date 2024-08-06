@@ -3,8 +3,6 @@
 #  Population class
 #  
 #####################################
-print("Sourcing Population.R ... ")
-
 # The R6 library has a lightweight class
 # library(R6)
 

@@ -3,7 +3,6 @@
 #  Person class
 #  
 #####################################
-print("Sourcing Person.R ... ")
 # library(R6)
 
 # We create class instances with the Agent$new()

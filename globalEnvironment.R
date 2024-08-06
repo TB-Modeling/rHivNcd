@@ -3,7 +3,6 @@
 #  GlobalEnvironment.R
 #  
 #####################################
-print("Sourcing GlobalEnvironment.R ... ")
 # GLOBAL PARAMETERS ARE CONSTANT. THEY ARE VISIBLE TO ALL CLASSES AND FUNCTIONS AND DONT CHANGE
 
 cat("Setting up global parameters .... \n")

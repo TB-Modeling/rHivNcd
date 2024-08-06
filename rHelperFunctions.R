@@ -3,8 +3,6 @@
 #  R helper functions
 #  
 #####################################
-print("Reading R Helper Functions... ")
-
 library(pryr)
 
 # Jeff's function for gauging RAM usage 

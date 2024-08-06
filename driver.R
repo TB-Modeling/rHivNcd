@@ -13,7 +13,6 @@ library(ggplot2)
 # library(data.table)
 
 #######################################################
-print("Sourcing dependencies")
 {
   source("globalEnvironment.R")
   source("person.R")
