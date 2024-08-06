@@ -19,8 +19,6 @@
 
 cd "/home/mschnur3/scratch4/melissa/rHivNcd"
 
-rm outputs/*
-rm node*
 
 # Calculate the start and end indices for the current array job
 first_id=$(( SLURM_ARRAY_TASK_ID * 24 + 1 ))
