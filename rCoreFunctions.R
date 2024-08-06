@@ -46,21 +46,21 @@ calibrate.baseline.single.rep <- function(replication.id){
   cat("Monthly enrollment: ",p.monthly.baseline.enrollment)
   cat("Monthly dropout: ",p.monthly.baseline.dropout)
   
-  inputs[replication.id,"enrollment"] = p.monthly.baseline.enrollment
-  inputs[replication.id,"dropout"] = p.monthly.baseline.dropout
-  inputs[replication.id,"ratio"] = dropout.to.enrollment.ratio
+  inputs[1,"enrollment"] = p.monthly.baseline.enrollment
+  inputs[1,"dropout"] = p.monthly.baseline.dropout
+  inputs[1,"ratio"] = dropout.to.enrollment.ratio
   
   #cat("Using", ram_usage(), "currently\n")
   
   # INITIALIZE AND RUN SIM 
-  seeds[replication.id] = replication.id
+  seeds[1] = replication.id
   pop<-initialize.simulation(id = replication.id,
                              n = POP.SIZE,
                              rep=replication.id,
                              ncdScenario = 1, # hard-coding for baseline 
                              saScenario = 0) 
   
-  khm.ids[replication.id] = pop$params$khm.id
+  khm.ids[1] = pop$params$khm.id
   
   while(pop$params$CYNOW<= END.YEAR){
     run.one.year.baseline(pop,
@@ -71,8 +71,8 @@ calibrate.baseline.single.rep <- function(replication.id){
   }
   
     # STORE COVERAGE 
-    coverage[replication.id,] = pop$stats$annual.ncd.trt.coverage
-    log.lik[replication.id] = compute.baseline.testing.likelihood(mean = coverage[replication.id,"2015"])
+    coverage[1,] = pop$stats$annual.ncd.trt.coverage
+    log.lik[1] = compute.baseline.testing.likelihood(mean = coverage[1,"2015"])
     
   
   dim.names.full = list(replication.id = c(replication.id),
