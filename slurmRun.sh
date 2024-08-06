@@ -3,11 +3,7 @@
 #each node has 48 cores and can run up to 48 parallel replications
 #we run the model in batches of 48 (e.g., 48 reps: 1 node, 480 reps: 10 nodes)....
 
-# Memory/walltime? 
-# pop=100k >>> 2 CPUs; 5 hours
-# pop=500k >>> 4 CPUs; 8 hours
-# pop=1m >>> 5 CPUs; 15 hours
-
+# Define the number of tasks per node
 
 
 #SBATCH --partition=parallel
@@ -35,7 +31,7 @@ module load r
 module load parallel
 
 # Running jobs in a sequence
-seq $first_id $last_id | parallel -j 24 --joblog node-${SLURM_ARRAY_TASK_ID}.log --wd . Rscript driver.R {}
+seq $first_id $last_id | parallel -j $NTASKS_PER_NODE --joblog node-${SLURM_ARRAY_TASK_ID}.log --wd . Rscript driver.R {}
 
 # seq $first_id $last_id: This generates a sequence of numbers from first_id to last_id.
 
