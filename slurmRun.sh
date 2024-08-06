@@ -11,7 +11,7 @@ NTASKS_PER_NODE=24
 #SBATCH --time=06:00:00 
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
-#SBATCH --ntasks-per-node=$NTASKS_PER_NODE
+#SBATCH --ntasks-per-node=24
 #SBATCH --output=outputs/outSlurm_%a.out
 #SBATCH --error=outputs/outSlurm_%a.err
 #SBATCH --mail-type=end
@@ -23,15 +23,15 @@ cd "/home/mschnur3/scratch4/melissa/rHivNcd"
 # rm node*
 
 # Calculate the start and end indices for the current array job
-first_id=$(( SLURM_ARRAY_TASK_ID * NTASKS_PER_NODE + 1 ))
-last_id=$(( first_id + NTASKS_PER_NODE - 1 ))
+first_id=$(( SLURM_ARRAY_TASK_ID * 24 + 1 ))
+last_id=$(( first_id + 24 - 1 ))
 
 
 module load r
 module load parallel
 
 # Running jobs in a sequence
-seq $first_id $last_id | parallel -j $NTASKS_PER_NODE --joblog node-${SLURM_ARRAY_TASK_ID}.log --wd . Rscript driver.R {}
+seq $first_id $last_id | parallel -j 24 --joblog node-${SLURM_ARRAY_TASK_ID}.log --wd . Rscript driver.R {}
 
 # seq $first_id $last_id: This generates a sequence of numbers from first_id to last_id.
 
