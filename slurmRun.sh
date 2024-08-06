@@ -4,7 +4,6 @@
 #we run the model in batches of 48 (e.g., 48 reps: 1 node, 480 reps: 10 nodes)....
 
 # Define the number of tasks per node
-NTASKS_PER_NODE=24
 
 #SBATCH --partition=parallel
 #SBATCH --job-name=hivncd
