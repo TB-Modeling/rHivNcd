@@ -3,7 +3,7 @@
 #  rCoreFunctions.R class
 #  
 #####################################
-library(distributions)
+#library(distributions)
 library(boot) 
 
 ##-----------------------------##
