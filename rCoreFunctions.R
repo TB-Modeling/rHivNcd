@@ -3,12 +3,14 @@
 #  rCoreFunctions.R class
 #  
 #####################################
-print("Sourcing rCoreFunctions.R ... ")
+library(distributions)
+library(boot) 
 
 ##-----------------------------##
 ##-- MAIN CALIBRATE FUNCTION --##
 ##-----------------------------##
 calibrate.baseline.single.rep <- function(replication.id){
+  set.seed(replication.id)
   print(replication.id)
   
   # Set up arrays for storing things
@@ -29,13 +31,16 @@ calibrate.baseline.single.rep <- function(replication.id){
   log.lik = c()
 
   # SAMPLE AND STORE INPUT VALUES 
-  p.monthly.baseline.enrollment = rlnorm(1, meanlog=log(0.08/12), sdlog=log(4)/2) # I think this needs to be logit normal 
-  dropout.to.enrollment.ratio = rlnorm(1, meanlog=0, sdlog=log(4)/2) 
-  p.monthly.baseline.dropout = p.monthly.baseline.enrollment * dropout.to.enrollment.ratio
-  # p.monthly.baseline.dropout = rlnorm(1, meanlog=log(0.03/12), sdlog=log(4)/2)
   # log(x)/2 --> can be off by a factor of x (i.e., CI on log scale goes from (1/x)*mean to x*mean)
+  expit = function(x){1/(1+exp(-x))}
   
-  print(p.monthly.baseline.enrollment)
+  logit.p.monthly.baseline.enrollment = rnorm(1, mean = logit(.08/12), sd = log(4)/2) 
+  log.dropout.to.enrollment.ratio = rnorm(1, mean=log(1), sd=log(4)/2)  # log odds ratio
+  
+  # by definition, expit will give me a value between 0 and 1 
+  p.monthly.baseline.dropout = expit(logit.p.monthly.baseline.enrollment + log.dropout.to.enrollment.ratio)
+  
+  #print(p.monthly.baseline.enrollment)
   inputs[replication.id,"enrollment"] = p.monthly.baseline.enrollment
   inputs[replication.id,"dropout"] = p.monthly.baseline.dropout
   inputs[replication.id,"ratio"] = dropout.to.enrollment.ratio
@@ -43,7 +48,6 @@ calibrate.baseline.single.rep <- function(replication.id){
   #cat("Using", ram_usage(), "currently\n")
   
   # INITIALIZE AND RUN SIM 
-  set.seed(replication.id)
   seeds[replication.id] = replication.id
   pop<-initialize.simulation(id = replication.id,
                              n = POP.SIZE,
