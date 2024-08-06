@@ -31,7 +31,7 @@ module load r
 module load parallel
 
 # Running jobs in a sequence
-seq $first_id $last_id | parallel -j $NTASKS_PER_NODE --joblog node-${SLURM_ARRAY_TASK_ID}.log --wd . Rscript driver.R {}
+seq $first_id $last_id | parallel -j 24 --joblog node-${SLURM_ARRAY_TASK_ID}.log --wd . Rscript driver.R {}
 
 # seq $first_id $last_id: This generates a sequence of numbers from first_id to last_id.
 
