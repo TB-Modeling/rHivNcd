@@ -11,7 +11,7 @@ library(boot)
 ##-----------------------------##
 calibrate.baseline.single.rep <- function(replication.id){
   set.seed(replication.id)
-  print(replication.id)
+  #print(replication.id)
   
   # Set up arrays for storing things
   dim.names.inputs = list(replication.id = c(replication.id),
@@ -72,33 +72,33 @@ calibrate.baseline.single.rep <- function(replication.id){
   
     # STORE COVERAGE 
     coverage[1,] = pop$stats$annual.ncd.trt.coverage
-    log.lik[1] = compute.baseline.testing.likelihood(mean = coverage[1,"2015"])
+    log.lik[1] = compute.baseline.testing.likelihood(mean(coverage[1,as.character(2015:2020)]))
     
+    dim.names.full = list(replication.id = c(replication.id),
+                          value = c("enrollment","dropout","ratio",
+                                    "coverage.2015-2020","exp(log.lik)",
+                                    "khm.id","seed","pop.2015"))
   
-  dim.names.full = list(replication.id = c(replication.id),
-                        value = c("enrollment","dropout","ratio",
-                                  "coverage.2015","exp(log.lik)",
-                                  "khm.id","seed"))
-  
-  rv.array = array(NA,
-                   dim = sapply(dim.names.full,length),
-                   dimnames = dim.names.full)
-  
-  rv.array[,"enrollment"] = inputs[,"enrollment"]
-  rv.array[,"dropout"] = inputs[,"dropout"]
-  rv.array[,"ratio"] = inputs[,"ratio"]
-  rv.array[,"coverage.2015"] = coverage[,"2015"]
-  rv.array[,"exp(log.lik)"] = exp(log.lik)
-  rv.array[,"khm.id"] = khm.ids
-  rv.array[,"seed"] = seeds
-  
-  rv = list()
-  rv$coverage = coverage[,-1]
-  rv$summary = rv.array
-  
-  #cat("Using", ram_usage(), "currently\n")
-  
-  rv
+    rv.array = array(NA,
+                     dim = sapply(dim.names.full,length),
+                     dimnames = dim.names.full)
+    
+    rv.array[,"enrollment"] = inputs[,"enrollment"]
+    rv.array[,"dropout"] = inputs[,"dropout"]
+    rv.array[,"ratio"] = inputs[,"ratio"]
+    rv.array[,"coverage.2015-2020"] = mean(coverage[,as.character(2015:2020)])
+    rv.array[,"exp(log.lik)"] = exp(log.lik)
+    rv.array[,"khm.id"] = khm.ids
+    rv.array[,"seed"] = seeds
+    rv.array[,"pop.2015"] = pop$stats$pop.size[1]
+    
+    rv = list()
+    rv$coverage = coverage[,-1]
+    rv$summary = rv.array
+    
+    #cat("Using", ram_usage(), "currently\n")
+    
+    rv
   
 }
 

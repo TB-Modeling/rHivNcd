@@ -1,6 +1,7 @@
 # output folder
 outputs/
 plots/
+calibration/
 
 # History files
 .Rhistory
