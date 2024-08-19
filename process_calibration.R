@@ -7,7 +7,8 @@ read.calibration.results = function(n.reps,
   dim.names = list(replication.id = 1:n.reps,
                    value = c("enrollment","dropout","ratio",
                              "coverage.2015-2020","exp(log.lik)",
-                             "khm.id","seed","pop.2015"))
+                             "khm.id","seed"))
+                             #,"pop.2015"))
   
   rv.array = array(NA,
                    dim = sapply(dim.names,length),
