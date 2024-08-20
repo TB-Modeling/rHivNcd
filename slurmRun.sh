@@ -1,12 +1,5 @@
 #!/bin/bash -l
 
-module load r
-module load parallel
-# cd "/home/mschnur3/scratch4/melissa/rHivNcd"
-cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd/rHivNcd"
-rm -f outputs/*
-rm -f node*
-
 #each node has 48 cores and can run up to 48 parallel replications
 #we run the model in batches of 48 (e.g., 48 reps: 1 node, 480 reps: 10 nodes)....
 
@@ -30,6 +23,14 @@ first_id=$(( SLURM_ARRAY_TASK_ID * ntasks_per_node + 1 ))
 last_id=$(( first_id + ntasks_per_node - 1 ))
 
 echo "Running models from $first_id to $last_id"
+
+module load r
+module load parallel
+# cd "/home/mschnur3/scratch4/melissa/rHivNcd"
+cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd/rHivNcd"
+rm -f outputs/*
+rm -f node*
+
 
 
 
