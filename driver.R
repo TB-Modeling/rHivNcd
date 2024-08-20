@@ -48,7 +48,7 @@ if(1==1){
   }
   # Print the input value to verify
   print(paste("Input value is:", input_value))
-
+  
   #print(as.numeric(args[1]))
   test.calibration = calibrate.baseline.single.rep(replication.id = as.numeric(args[1]))
   #save(test.calibration, file = paste0("outputs/test.calibration_",Sys.Date(),".RData"))
@@ -75,15 +75,24 @@ if(1==2){
   save(test.calibration,file = paste0(output_folder,"/test.calibration_",1,".RData"))  
 }
 
+# # # #######################################################
+# # # # # PROFILE
+# library(profvis)
+# profvis({
+#   #make sure the output folder exists, and if not, create it
+#   output_folder <- "~/Downloads/outputs"
+#   # Check if the folder exists
+#   if (!dir.exists(output_folder)) {
+#     # Create the folder if it does not exist
+#     dir.create(output_folder, recursive = TRUE)
+#   }
+#   ###
+#   set.seed(1)
+#   test.calibration = calibrate.baseline.single.rep(replication.id = 1)
+#   save(test.calibration,file = paste0(output_folder,"/test.calibration_",1,".RData"))
+# })
 
-
-
-
-
-
-
-
-
+ 
 # # # #######################################################
 # # # # SINGLE RUN LOCALLY
 # if (1==1) {

@@ -14,6 +14,14 @@
 #SBATCH --mail-type=end
 #SBATCH --array=0-1
 
+module load r
+module load parallel
+
+# cd "/home/mschnur3/scratch4/melissa/rHivNcd"
+cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd/rHivNcd"
+
+# rm -f outputs/*
+rm -f node*
 
 # Define the number of tasks per node
 ntasks_per_node=12
@@ -22,15 +30,6 @@ first_id=$(( SLURM_ARRAY_TASK_ID * ntasks_per_node + 1 ))
 last_id=$(( first_id + ntasks_per_node - 1 ))
 
 echo "Running models from $first_id to $last_id"
-
-module load r
-module load parallel
-# cd "/home/mschnur3/scratch4/melissa/rHivNcd"
-cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd/rHivNcd"
-# rm -f outputs/*
-rm -f node*
-
-
 
 
 # Running jobs in a sequence
