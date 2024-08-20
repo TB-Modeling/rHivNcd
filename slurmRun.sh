@@ -1,6 +1,11 @@
 #!/bin/bash -l
-rm outputs/*
-rm node*
+
+module load r
+module load parallel
+# cd "/home/mschnur3/scratch4/melissa/rHivNcd"
+cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd/rHivNcd"
+rm -f outputs/*
+rm -f node*
 
 #each node has 48 cores and can run up to 48 parallel replications
 #we run the model in batches of 48 (e.g., 48 reps: 1 node, 480 reps: 10 nodes)....
@@ -18,17 +23,13 @@ rm node*
 #SBATCH --mail-type=end
 #SBATCH --array=0-1
 
-module load r
-module load parallel
-# cd "/home/mschnur3/scratch4/melissa/rHivNcd"
-cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd/rHivNcd"
 
 ntasks_per_node=12
 # Calculate the start and end indices for the current array job
 first_id=$(( SLURM_ARRAY_TASK_ID * ntasks_per_node + 1 ))
 last_id=$(( first_id + ntasks_per_node - 1 ))
 
-cat("running model ", first_id, " to ", last_id, "\n")
+echo "Running models from $first_id to $last_id"
 
 
 
