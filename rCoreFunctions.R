@@ -3,33 +3,29 @@
 #  rCoreFunctions.R class
 #  
 #####################################
-#library(distributions)
-library(boot) 
-
+ 
 ##-----------------------------##
-##-- MAIN CALIBRATE FUNCTION --##
+##-- Calibration function.   --##
 ##-----------------------------##
+#runs the baseline model for a single replication and save the coverage outcomes 
 calibrate.baseline.single.rep <- function(replication.id){
-  set.seed(replication.id)
-  #print(replication.id)
+  if (DEBUGMODE) cat("running calibrate.baseline.single.rep with replication.id=",replication.id,"\n")
   
-  # Set up arrays for storing things
+  #fix the seed: 
+  set.seed(replication.id)
+  
+  # Set up arrays for storing inputs and outputs
   dim.names.inputs = list(replication.id = c(replication.id),
                           inputs = c("enrollment","dropout","ratio"))
   inputs = array(NA,
                  dim = sapply(dim.names.inputs,length),
                  dimnames = dim.names.inputs)
-  
   dim.names.coverage = list(replication.id = c(replication.id),
                             year = (c(INITIAL.YEAR:END.YEAR)))
   coverage = array(NA,
                    dim = sapply(dim.names.coverage,length),
                    dimnames = dim.names.coverage)
   
-  khm.ids = c()
-  seeds = c()
-  log.lik = c()
-
   # SAMPLE AND STORE INPUT VALUES 
   # log(x)/2 --> can be off by a factor of x (i.e., CI on log scale goes from (1/x)*mean to x*mean)
   expit = function(x){1/(1+exp(-x))}
@@ -43,8 +39,8 @@ calibrate.baseline.single.rep <- function(replication.id){
   # by definition, expit will give me a value between 0 and 1 
   p.monthly.baseline.dropout = expit(logit.p.monthly.baseline.enrollment + log.dropout.to.enrollment.ratio)
   
-  cat("Monthly enrollment: ",p.monthly.baseline.enrollment)
-  cat("Monthly dropout: ",p.monthly.baseline.dropout)
+  if (DEBUGMODE) cat("Monthly enrollment= ",p.monthly.baseline.enrollment," & dropout= ",p.monthly.baseline.dropout,"\n" )
+  
   
   inputs[1,"enrollment"] = p.monthly.baseline.enrollment
   inputs[1,"dropout"] = p.monthly.baseline.dropout
@@ -52,16 +48,16 @@ calibrate.baseline.single.rep <- function(replication.id){
   
   #cat("Using", ram_usage(), "currently\n")
   
-  # INITIALIZE AND RUN SIM 
-  seeds[1] = replication.id
+  # INITIALIZE SIMULATION: 
   pop<-initialize.simulation(id = replication.id,
                              n = POP.SIZE,
                              rep=replication.id,
                              ncdScenario = 1, # hard-coding for baseline 
                              saScenario = 0) 
   
-  khm.ids[1] = pop$params$khm.id
+   if (DEBUGMODE) cat("Population is initialized for khm.id: ",pop$params$khm.id,"\n")
   
+  # RUN SIMULATION 
   while(pop$params$CYNOW<= END.YEAR){
     run.one.year.baseline(pop,
                           p.monthly.baseline.enrollment=p.monthly.baseline.enrollment, # sampled above
@@ -70,34 +66,32 @@ calibrate.baseline.single.rep <- function(replication.id){
     #cat("Using", ram_usage(), "currently\n")
   }
   
-    # STORE COVERAGE 
+    # STORE OUTPUTS 
     coverage[1,] = pop$stats$annual.ncd.trt.coverage
-    log.lik[1] = compute.baseline.testing.likelihood(mean(coverage[1,as.character(2015:2020)]))
+    log.lik = compute.baseline.testing.likelihood(mean(coverage[1,as.character(2015:2020)]))
     
     dim.names.full = list(replication.id = c(replication.id),
                           value = c("enrollment","dropout","ratio",
                                     "coverage.2015-2020","exp(log.lik)",
                                     "khm.id","seed","pop.2015"))
-  
     rv.array = array(NA,
                      dim = sapply(dim.names.full,length),
                      dimnames = dim.names.full)
-    
     rv.array[,"enrollment"] = inputs[,"enrollment"]
     rv.array[,"dropout"] = inputs[,"dropout"]
     rv.array[,"ratio"] = inputs[,"ratio"]
     rv.array[,"coverage.2015-2020"] = mean(coverage[,as.character(2015:2020)])
     rv.array[,"exp(log.lik)"] = exp(log.lik)
-    rv.array[,"khm.id"] = khm.ids
-    rv.array[,"seed"] = seeds
+    rv.array[,"khm.id"] = pop$params$khm.id
+    rv.array[,"seed"] = replication.id
     rv.array[,"pop.2015"] = pop$stats$pop.size[1]
     
     rv = list()
-    rv$coverage = coverage[,-1]
-    rv$summary = rv.array
+    rv$coverage = coverage[,-1] #all annual coverage values 
+    rv$summary = rv.array #summary values
     
+    if (DEBUGMODE) cat("all outputs are stored","\n")
     #cat("Using", ram_usage(), "currently\n")
-    
     rv
   
 }
@@ -200,11 +194,11 @@ calibrate.baseline <- function(n.reps){
 ##------------------------------##
 ##-- MAIN INITIALIZE FUNCTION --##
 ##------------------------------##
-initialize.simulation <- function( id=0,
-                                   n=0 ,
+initialize.simulation <- function( id=0, #population id
+                                   n=0 , #population size
                                    rep=0, #replication id
-                                   ncdScenario=0, #ncd scenario
-                                   saScenario=0 #sa scenario
+                                   ncdScenario=0, #ncd scenario id
+                                   saScenario=0 #sa scenario id 
 ){
   # 1- create an empty population
   pop<-POPULATION$new(id = id,
@@ -1247,3 +1241,4 @@ if(1==2){
     })) 
   } 
 }
+cat("Sourced rCoreFunctions.R .... \n")

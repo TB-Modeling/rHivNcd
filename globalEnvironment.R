@@ -5,8 +5,8 @@
 #####################################
 # GLOBAL PARAMETERS ARE CONSTANT. THEY ARE VISIBLE TO ALL CLASSES AND FUNCTIONS AND DONT CHANGE
 
-cat("Setting up global parameters .... \n")
 DEBUGMODE=T
+DEBUG=T
 
 ANNUAL.TIMESTEPS=12 #how many timepsteps in a year?
 INITIAL.YEAR=2014 #simulation starts
@@ -17,8 +17,7 @@ AGE.INTERVAL=5
 MIN.AGE=0
 MAX.AGE=85*12
 
-POP.SIZE= 100000 # 1000
-
+POP.SIZE= 200099
 #
 FEMALE=1
 MALE=2
@@ -199,7 +198,7 @@ SA.PARAMS=list(
 
 ################################################################################################################
 # MODEL PARAMETERS (MP) HOUSES ALL PARAMETERS THAT MAY BE CHANGED IN SENSITIVITY ANALYSIS. THEY'RE CREATED ONCE FOR EACH POPULATION
-generate.new.modelParameter<-function(rep=0,
+generate.new.modelParameter<-function(rep=0, #@MS: Isnt this the replication ID? 
                                       ncdScenario=0,
                                       saScenario=0){
   #variables
@@ -488,3 +487,4 @@ generate.new.stat<-function(rep=0,
 
 
 
+cat("Sourced globalEnvironment.R .... \n")
