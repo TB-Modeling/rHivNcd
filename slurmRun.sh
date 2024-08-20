@@ -16,7 +16,8 @@
 #SBATCH --mail-type=end
 #SBATCH --array=0-1
 
-cd "/home/mschnur3/scratch4/melissa/rHivNcd"
+# cd "/home/mschnur3/scratch4/melissa/rHivNcd"
+cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd"
 
 # rm outputs/*
 # rm node*

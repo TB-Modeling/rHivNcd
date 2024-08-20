@@ -3,7 +3,7 @@
 #  R helper functions
 #  
 #####################################
-library(pryr)
+
 
 # Jeff's function for gauging RAM usage 
 ram_usage <- function() {
@@ -132,3 +132,5 @@ hms_span <- function(start, end) {
       formatC(x, width = 2, format = "d", flag = "0")
     }), collapse = ":")
 }
+
+cat("Sourced rHelperFunctions.R .... \n")
