@@ -41,7 +41,6 @@ cat outputs/slurm_*.err > outputs/combined_slurm.err
 
 
 
-
 # seq $first_id $last_id: This generates a sequence of numbers from first_id to last_id.
 
 # | parallel -j 48 --joblog node-${SLURM_ARRAY_TASK_ID}.log --wd .:
