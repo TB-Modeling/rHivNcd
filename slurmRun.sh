@@ -1,4 +1,6 @@
 #!/bin/bash -l
+rm outputs/*
+rm node*
 
 #each node has 48 cores and can run up to 48 parallel replications
 #we run the model in batches of 48 (e.g., 48 reps: 1 node, 480 reps: 10 nodes)....
@@ -7,31 +9,36 @@
 
 #SBATCH --partition=parallel
 #SBATCH --job-name=hivncd
-#SBATCH --time=06:00:00 
+#SBATCH --time=01:00:00 
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=2
-#SBATCH --ntasks-per-node=24
+#SBATCH --cpus-per-task=4
+#SBATCH --ntasks-per-node=12
 #SBATCH --output=outputs/outSlurm_%a.out
 #SBATCH --error=outputs/outSlurm_%a.err
 #SBATCH --mail-type=end
 #SBATCH --array=0-1
 
-# cd "/home/mschnur3/scratch4/melissa/rHivNcd"
-cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd"
-
-# rm outputs/*
-# rm node*
-
-# Calculate the start and end indices for the current array job
-first_id=$(( SLURM_ARRAY_TASK_ID * 24 + 1 ))
-last_id=$(( first_id + 24 - 1 ))
-
-
 module load r
 module load parallel
+# cd "/home/mschnur3/scratch4/melissa/rHivNcd"
+cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd/rHivNcd"
+
+ntasks_per_node=12
+# Calculate the start and end indices for the current array job
+first_id=$(( SLURM_ARRAY_TASK_ID * ntasks_per_node + 1 ))
+last_id=$(( first_id + ntasks_per_node - 1 ))
+
+cat("running model ", first_id, " to ", last_id, "\n")
+
+
 
 # Running jobs in a sequence
-seq $first_id $last_id | parallel -j 24 --joblog node-${SLURM_ARRAY_TASK_ID}.log --wd . Rscript driver.R {}
+seq $first_id $last_id | parallel -j $ntasks_per_node --joblog node-${SLURM_ARRAY_TASK_ID}.log --wd . Rscript driver.R {}
+
+
+
+
+
 
 # seq $first_id $last_id: This generates a sequence of numbers from first_id to last_id.
 
