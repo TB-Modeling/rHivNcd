@@ -7,12 +7,12 @@
 #SBATCH --job-name=hivncd
 #SBATCH --time=05:00:00 
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=2
-#SBATCH --ntasks-per-node=24
+#SBATCH --cpus-per-task=4
+#SBATCH --ntasks-per-node=12
 #SBATCH --output=outputs/slurm_%a.out
 #SBATCH --error=outputs/slurm_%a.err
 #SBATCH --mail-type=end
-#SBATCH --array=0-0
+#SBATCH --array=1-1
 
 module load r
 module load parallel
@@ -22,9 +22,9 @@ cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd/rHivNcd"
 
 # rm -f outputs/*
 rm -f node*
-
-# Define the number of tasks per node
-ntasks_per_node=24
+  
+  # Define the number of tasks per node
+  ntasks_per_node=12
 # Calculate the start and end indices for the current array job
 first_id=$(( SLURM_ARRAY_TASK_ID * ntasks_per_node + 1 ))
 last_id=$(( first_id + ntasks_per_node - 1 ))
