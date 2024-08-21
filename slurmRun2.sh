@@ -17,8 +17,8 @@
 module load r
 module load parallel
 
-# cd "/home/mschnur3/scratch4/melissa/rHivNcd"
-cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd/rHivNcd"
+cd "/home/mschnur3/scratch4/melissa/rHivNcd"
+# cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd/rHivNcd"
 
 # rm -f outputs/*
 rm -f node*
