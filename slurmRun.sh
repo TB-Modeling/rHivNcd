@@ -5,9 +5,9 @@
 
 #SBATCH --partition=parallel
 #SBATCH --job-name=hivncd
-#SBATCH --time=05:00:00 
+#SBATCH --time=10:00:00 
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=10
+#SBATCH --cpus-per-task=12
 #SBATCH --ntasks-per-node=4
 #SBATCH --output=outputs/slurm_%a.out
 #SBATCH --error=outputs/slurm_%a.err
