@@ -5,7 +5,7 @@
 
 #SBATCH --partition=parallel
 #SBATCH --job-name=hivncd
-#SBATCH --time=05:00:00 
+#SBATCH --time=10:00:00 
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
 #SBATCH --ntasks-per-node=18
