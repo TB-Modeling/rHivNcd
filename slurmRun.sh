@@ -7,8 +7,8 @@
 #SBATCH --job-name=hivncd
 #SBATCH --time=10:00:00 
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=24
-#SBATCH --ntasks-per-node=2
+#SBATCH --cpus-per-task=16
+#SBATCH --ntasks-per-node=3
 #SBATCH --output=outputs/slurm_%a.out
 #SBATCH --error=outputs/slurm_%a.err
 #SBATCH --mail-type=end
@@ -24,7 +24,7 @@ cd "/home/mschnur3/scratch4/melissa/rHivNcd"
 rm -f node*
 
 # Define the number of tasks per node
-ntasks_per_node=2
+ntasks_per_node=3
 # Calculate the start and end indices for the current array job
 first_id=$(( SLURM_ARRAY_TASK_ID * ntasks_per_node + 1 ))
 last_id=$(( first_id + ntasks_per_node - 1 ))
