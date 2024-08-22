@@ -21,7 +21,7 @@ cd "/home/mschnur3/scratch4/melissa/rHivNcd"
 # cd "/home/pkasaie/scr4_ekendal2/pkasaie/hivncd/rHivNcd"
 
 # rm -f outputs/*
-rm -f node*
+#rm -f node*
   
   # Define the number of tasks per node
   ntasks_per_node=3
