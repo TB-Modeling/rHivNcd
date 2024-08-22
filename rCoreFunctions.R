@@ -33,7 +33,7 @@ calibrate.baseline.single.rep <- function(replication.id){
   logit.p.monthly.baseline.enrollment = rnorm(1, mean = logit(.08/12), sd = log(4)/2) 
   p.monthly.baseline.enrollment = expit(logit.p.monthly.baseline.enrollment)
   
-  log.dropout.to.enrollment.ratio = rnorm(2, mean=log(1), sd=log(4)/2)  # log odds ratio
+  log.dropout.to.enrollment.ratio = rnorm(1, mean=log(2), sd=log(4)/2)  # log odds ratio
   dropout.to.enrollment.ratio = exp(log.dropout.to.enrollment.ratio)
   
   # by definition, expit will give me a value between 0 and 1 
