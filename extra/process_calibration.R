@@ -1,5 +1,8 @@
-N.REPS = 24
-CALIBRATION.DIR = "calibration/calibration_08_19"
+N.REPS.500k = 6
+CALIBRATION.DIR.500k = "calibration/calibration_08_23"
+
+N.REPS.100k = 24
+CALIBRATION.DIR.100k = "calibration/calibration_08_19"
 
 read.calibration.results = function(n.reps,
                                     calibration.dir){
@@ -24,4 +27,12 @@ read.calibration.results = function(n.reps,
   
 }
 
-x = read.calibration.results(n.reps = N.REPS,calibration.dir = CALIBRATION.DIR)
+test.500k = read.calibration.results(n.reps = N.REPS.500k,calibration.dir = CALIBRATION.DIR.500k)
+test.100k = read.calibration.results(n.reps = N.REPS.100k,calibration.dir = CALIBRATION.DIR.100k)
+
+x = c()
+for(i in 1:6){
+  x[i] = abs(test.100k[i,"coverage.2015-2020"] - test.500k[i,"coverage.2015-2020"])/test.500k[i,"coverage.2015-2020"]
+}
+x
+
