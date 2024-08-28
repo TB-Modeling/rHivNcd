@@ -5,14 +5,14 @@
 
 #SBATCH --partition=parallel
 #SBATCH --job-name=hivncd
-#SBATCH --time=5:00:00 
+#SBATCH --time=3:00:00 
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
 #SBATCH --ntasks-per-node=24
 #SBATCH --output=outputs/slurm_%a.out
 #SBATCH --error=outputs/slurm_%a.err
 #SBATCH --mail-type=end
-#SBATCH --array=0-21
+#SBATCH --array=0-41
 
 module load r
 module load parallel
