@@ -12,7 +12,7 @@
 #SBATCH --output=outputs/slurm_%a.out
 #SBATCH --error=outputs/slurm_%a.err
 #SBATCH --mail-type=end
-#SBATCH --array=0-41
+#SBATCH --array=42-124
 
 module load r
 module load parallel
