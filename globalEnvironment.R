@@ -74,7 +74,8 @@ BASELINE.VALUES = list(
   treatment = 1, 
   adherence = 0.40, # Hickey et al, 2021: ~40% of non-intervention group had controlled hypertension ("Among those engaged in care, 56% of intervention group participants and 43% of control group participants had controlled hypertension at year 3")
   dropout = NULL # at baseline, model dropouts to maintain 7% on treatment
-  # 0.80/12 # Hickey et al, 2021: ~20% of control group who linked to care attended 1 visit per year for each of 3 years of follow up
+  # Hickey et al, 2021: ~20% of control group who linked to care attended 1 visit per year for each of 3 years of follow up
+  # .8 dropout over three years --> 0.26 per year --> 0.022 per month 
 )
 
 pMonthlyCoverage=0.1/12 #assuming 10% annual coverage 
