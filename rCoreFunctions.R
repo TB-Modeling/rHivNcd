@@ -16,7 +16,7 @@ calibrate.baseline.single.rep <- function(replication.id){
   
   # Set up arrays for storing inputs and outputs
   dim.names.inputs = list(replication.id = c(replication.id),
-                          inputs = c("enrollment","dropout","ratio"))
+                          inputs = c("enrollment","dropout"))
   inputs = array(NA,
                  dim = sapply(dim.names.inputs,length),
                  dimnames = dim.names.inputs)
@@ -30,21 +30,15 @@ calibrate.baseline.single.rep <- function(replication.id){
   # log(x)/2 --> can be off by a factor of x (i.e., CI on log scale goes from (1/x)*mean to x*mean)
   expit = function(x){1/(1+exp(-x))}
   
-  logit.p.monthly.baseline.enrollment = rnorm(1, mean = logit(.08/12), sd = log(4)/2) 
+  logit.p.monthly.baseline.enrollment = rnorm(1, mean = logit(.025/12), sd = log(4)/2) # best guess from a sim that scored well 
   p.monthly.baseline.enrollment = expit(logit.p.monthly.baseline.enrollment)
-  
-  log.dropout.to.enrollment.ratio = rnorm(1, mean=log(2), sd=log(4)/2)  # log odds ratio
-  dropout.to.enrollment.ratio = exp(log.dropout.to.enrollment.ratio)
-  
-  # by definition, expit will give me a value between 0 and 1 
-  p.monthly.baseline.dropout = expit(logit.p.monthly.baseline.enrollment + log.dropout.to.enrollment.ratio)
-  
+  p.monthly.baseline.dropout = (0.8/3)/12  # Hickey et al, 2021: ~80% of control group who linked to care dropped out over 3 years of follow up
+
   if (DEBUGMODE) cat("Monthly enrollment= ",p.monthly.baseline.enrollment," & dropout= ",p.monthly.baseline.dropout,"\n" )
   
   
   inputs[1,"enrollment"] = p.monthly.baseline.enrollment
   inputs[1,"dropout"] = p.monthly.baseline.dropout
-  inputs[1,"ratio"] = dropout.to.enrollment.ratio
   
   #cat("Using", ram_usage(), "currently\n")
   
@@ -71,7 +65,7 @@ calibrate.baseline.single.rep <- function(replication.id){
     log.lik = compute.baseline.testing.likelihood(mean(coverage[1,as.character(2015:2020)]))
     
     dim.names.full = list(replication.id = c(replication.id),
-                          value = c("enrollment","dropout","ratio",
+                          value = c("enrollment","dropout",
                                     "coverage.2015-2020","exp(log.lik)",
                                     "khm.id","seed","pop.2015"))
     rv.array = array(NA,
@@ -79,7 +73,6 @@ calibrate.baseline.single.rep <- function(replication.id){
                      dimnames = dim.names.full)
     rv.array[,"enrollment"] = inputs[,"enrollment"]
     rv.array[,"dropout"] = inputs[,"dropout"]
-    rv.array[,"ratio"] = inputs[,"ratio"]
     rv.array[,"coverage.2015-2020"] = mean(coverage[,as.character(2015:2020)])
     rv.array[,"exp(log.lik)"] = exp(log.lik)
     rv.array[,"khm.id"] = pop$params$khm.id
@@ -93,101 +86,6 @@ calibrate.baseline.single.rep <- function(replication.id){
     if (DEBUGMODE) cat("all outputs are stored","\n")
     #cat("Using", ram_usage(), "currently\n")
     rv
-  
-}
-
-
-calibrate.baseline <- function(n.reps){
-  
-  # Set up arrays for storing things
-  dim.names.inputs = list(rep = c(1:n.reps),
-                          inputs = c("enrollment","dropout","ratio"))
-  inputs = array(NA,
-                 dim = sapply(dim.names.inputs,length),
-                 dimnames = dim.names.inputs)
-  
-  dim.names.coverage = list(rep = c(1:n.reps),
-                            year = (c(INITIAL.YEAR:END.YEAR)))
-  coverage = array(NA,
-                   dim = sapply(dim.names.coverage,length),
-                   dimnames = dim.names.coverage)
-  
-  khm.ids = c()
-  seeds = c()
-  log.lik = c()
-  
-  for(rep in (1:n.reps)){
-    print(paste("replication ",rep," starting..."))
-    
-    # SAMPLE AND STORE INPUT VALUES 
-    p.monthly.baseline.enrollment = rlnorm(1, meanlog=log(0.08/12), sdlog=log(4)/2) # I think this needs to be logit normal 
-    dropout.to.enrollment.ratio = rlnorm(1, meanlog=0, sdlog=log(4)/2) 
-    p.monthly.baseline.dropout = p.monthly.baseline.enrollment * dropout.to.enrollment.ratio
-    # p.monthly.baseline.dropout = rlnorm(1, meanlog=log(0.03/12), sdlog=log(4)/2)
-    # log(x)/2 --> can be off by a factor of x (i.e., CI on log scale goes from (1/x)*mean to x*mean)
-    
-    inputs[rep,"enrollment"] = p.monthly.baseline.enrollment
-    inputs[rep,"dropout"] = p.monthly.baseline.dropout
-    inputs[rep,"ratio"] = dropout.to.enrollment.ratio
-    
-    
-    # INITIALIZE AND RUN SIM 
-    set.seed(rep)
-    seeds[rep] = rep
-    pop<-initialize.simulation(id = rep,
-                               n = POP.SIZE,
-                               rep=rep,
-                               ncdScenario = 1, # hard-coding for baseline 
-                               saScenario = 0) 
-    
-    khm.ids[rep] = pop$params$khm.id
-    
-    while(pop$params$CYNOW<= END.YEAR){
-      run.one.year.baseline(pop,
-                            p.monthly.baseline.enrollment=p.monthly.baseline.enrollment, # sampled above
-                            p.monthly.baseline.dropout=p.monthly.baseline.dropout # sampled above
-      ) 
-      
-    }
-    
-    # STORE COVERAGE 
-    coverage[rep,] = pop$stats$annual.ncd.trt.coverage
-    log.lik[rep] = compute.baseline.testing.likelihood(mean = coverage[rep,"2015"])
-    
-    
-    #saving population stat and param files separately
-    # x=0
-    # saveRDS(pop$stats,file = paste0("outputs/popStats-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
-    # saveRDS(pop$params,file = paste0("outputs/popParams-node",x,"-ncd",ncdScenarios[[ncdId]]$id,"-rep",rep),compress = T)
-    
-  }
-  
-  dim.names.full = list(rep = c(1:n.reps),
-                        value = c("enrollment","dropout","ratio",
-                                  "coverage.2015","exp(log.lik)",
-                                  "khm.id","seed"))
-  
-  rv.array = array(NA,
-                   dim = sapply(dim.names.full,length),
-                   dimnames = dim.names.full)
-  
-  rv.array[,"enrollment"] = inputs[,"enrollment"]
-  rv.array[,"dropout"] = inputs[,"dropout"]
-  rv.array[,"ratio"] = inputs[,"ratio"]
-  rv.array[,"coverage.2015"] = coverage[,"2015"]
-  rv.array[,"exp(log.lik)"] = exp(log.lik)
-  rv.array[,"khm.id"] = khm.ids
-  rv.array[,"seed"] = seeds
-  
-  rv = list()
-  rv$coverage = coverage[,-1]
-  rv$summary = rv.array
-  # rv$inputs = inputs
-  # rv$khm.ids = khm.ids
-  # rv$seeds = seeds
-  # rv$log.lik = log.lik
-  
-  rv
   
 }
 
